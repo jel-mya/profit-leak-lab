@@ -40,6 +40,11 @@ import {
   PaginationItem,
 } from '@/components/ui/pagination';
 import { pageWindow } from '../../core/pagination.mjs';
+import {
+  actionSource,
+  sourceReviewStatus,
+  type ActionSource,
+} from '../../core/action-source.mjs';
 import { demo, demoDate } from '../../core/demo.mjs';
 import {
   applyCsvPreview,
@@ -51,6 +56,7 @@ import { useReviewTool } from '@/lib/use-review-tool';
 
 type Data = Record<string, Record<string, string | number>[]>;
 type Action = {
+  source?: ActionSource;
   id: string;
   title: string;
   owner: string;
@@ -194,6 +200,12 @@ function Grid({
 export default function Home() {
   const [data, setData] = useState<Data>(demo);
   const [dataVersion, setDataVersion] = useState(0);
+  const [sourceVersions, setSourceVersions] = useState<Record<string, number>>({
+    jobs: 0,
+    debtors: 0,
+    payments: 0,
+    labour: 0,
+  });
   const [mode, setMode] = useState('Demo');
   const [asOf, setAsOf] = useState(demoDate);
   const [currency, setCurrency] = useState('AUD');
@@ -261,9 +273,13 @@ export default function Home() {
     }).format(cents / 100);
   const pct = (value: number | null) =>
     value === null ? 'No revenue' : `${value.toFixed(1)}%`;
-  function addAction(value: string) {
+  function addAction(value: string, source?: ActionSource) {
     if (!value.trim()) return;
-    if (actions.some((a) => a.title === value)) {
+    if (
+      actions.some((a) =>
+        source ? a.source?.key === source.key : !a.source && a.title === value,
+      )
+    ) {
       setMessage('This item is already in your action list.');
       setTab('actions');
       return;
@@ -272,6 +288,7 @@ export default function Home() {
       ...old,
       {
         id: crypto.randomUUID(),
+        source,
         title: value.trim(),
         owner: '',
         due: '',
@@ -351,6 +368,10 @@ export default function Home() {
         target,
       );
       setData(next);
+      setSourceVersions((old) => ({
+        ...old,
+        [preview.section]: old[preview.section] + 1,
+      }));
       setDataVersion((v) => v + 1);
       setMode('Private session');
       if (mode === 'Demo') {
@@ -369,8 +390,12 @@ export default function Home() {
       );
     }
   }
-  const track = (label: string) => (
-    <Button variant="outline" size="sm" onClick={() => addAction(label)}>
+  const track = (label: string, source?: ActionSource) => (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() => addAction(label, source)}
+    >
       Track <ArrowUpRight size={14} />
     </Button>
   );
@@ -545,7 +570,18 @@ export default function Home() {
                           </small>
                         </>,
                         cash(d.outstanding),
-                        track(`Follow up debtor ${d.id}: ${d.customer}`),
+                        track(
+                          `Follow up debtor ${d.id}: ${d.customer}`,
+                          actionSource(
+                            'debtors',
+                            [d.id],
+                            d.outstanding,
+                            currency,
+                            asOf,
+                            target,
+                            sourceVersions.debtors,
+                          ),
+                        ),
                       ]),
                     ...result.duplicates.slice(0, 5).map((d) => [
                       <>
@@ -553,7 +589,18 @@ export default function Home() {
                         <small>Possible duplicate · {d.invoice}</small>
                       </>,
                       cash(d.amount),
-                      track(`Investigate payments ${d.paymentIds.join(', ')}`),
+                      track(
+                        `Investigate payments ${d.paymentIds.join(', ')}`,
+                        actionSource(
+                          'payments',
+                          d.paymentIds,
+                          d.amount,
+                          currency,
+                          asOf,
+                          target,
+                          sourceVersions.payments,
+                        ),
+                      ),
                     ]),
                   ]}
                 />
@@ -623,7 +670,18 @@ export default function Home() {
                     {pct(j.margin)}
                   </span>,
                   cash(j.shortfall),
-                  track(`Review job ${j.id}: ${j.name}`),
+                  track(
+                    `Review job ${j.id}: ${j.name}`,
+                    actionSource(
+                      'jobs',
+                      [j.id],
+                      j.shortfall,
+                      currency,
+                      asOf,
+                      target,
+                      sourceVersions.jobs,
+                    ),
+                  ),
                 ])}
               />
             </section>
@@ -658,7 +716,18 @@ export default function Home() {
                   <span key="risk" className={d.risk === 'High' ? 'risk' : ''}>
                     {d.risk}
                   </span>,
-                  track(`Follow up debtor ${d.id}: ${d.customer}`),
+                  track(
+                    `Follow up debtor ${d.id}: ${d.customer}`,
+                    actionSource(
+                      'debtors',
+                      [d.id],
+                      d.outstanding,
+                      currency,
+                      asOf,
+                      target,
+                      sourceVersions.debtors,
+                    ),
+                  ),
                 ])}
               />
             </section>
@@ -694,7 +763,18 @@ export default function Home() {
                     d.count,
                     cash(d.amount),
                     d.paymentIds.join(', '),
-                    track(`Investigate payments ${d.paymentIds.join(', ')}`),
+                    track(
+                      `Investigate payments ${d.paymentIds.join(', ')}`,
+                      actionSource(
+                        'payments',
+                        d.paymentIds,
+                        d.amount,
+                        currency,
+                        asOf,
+                        target,
+                        sourceVersions.payments,
+                      ),
+                    ),
                   ])}
                 />
               )}
@@ -726,7 +806,18 @@ export default function Home() {
                   l.approvedHours,
                   `${l.varianceHours.toFixed(2)} h`,
                   cash(l.exposure),
-                  track(`Reconcile labour ${l.id}: ${l.person}`),
+                  track(
+                    `Reconcile labour ${l.id}: ${l.person}`,
+                    actionSource(
+                      'labour',
+                      [l.id],
+                      l.exposure,
+                      currency,
+                      asOf,
+                      target,
+                      sourceVersions.labour,
+                    ),
+                  ),
                 ])}
               />
             </section>
@@ -809,6 +900,41 @@ export default function Home() {
               {actions.map((a) => (
                 <article className="action-card" key={a.id}>
                   <h3>{a.title}</h3>
+                  {a.source && (
+                    <div className="action-source">
+                      <p>
+                        {sourceReviewStatus(
+                          a.source,
+                          sourceVersions,
+                          currency,
+                          asOf,
+                          target,
+                        )}
+                      </p>
+                      <p className="muted">
+                        Tracked {a.source.asOf} ·{' '}
+                        {new Intl.NumberFormat('en-AU', {
+                          style: 'currency',
+                          currency: a.source.currency,
+                        }).format(a.source.amountMinorUnits / 100)}{' '}
+                        at tracking. This is a review amount, not confirmed loss
+                        or recovery.
+                      </p>
+                      <p className="muted">
+                        Source: {a.source.section} ·{' '}
+                        {a.source.recordIds.slice(0, 5).join(', ')}
+                        {a.source.recordIds.length > 5
+                          ? ` and ${a.source.recordIds.length - 5} more`
+                          : ''}
+                      </p>
+                      <Button
+                        variant="outline"
+                        onClick={() => setTab(a.source!.section)}
+                      >
+                        Review source section
+                      </Button>
+                    </div>
+                  )}
                   <div className="action-fields">
                     <label>
                       Owner

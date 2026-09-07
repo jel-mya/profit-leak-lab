@@ -707,3 +707,6 @@ td, .signal, .coverage, .stat p, .stat span, .cloud-form label { font-size: 14px
 .history-fields { display: grid; gap: 12px; font-size: 14px; }
 .history-fields dt { font-weight: 700; }
 .history-fields dd { margin-top: 4px; white-space: pre-wrap; }
+
+.action-source { border-left: 3px solid var(--primary); padding: 8px 16px; margin-bottom: 18px; overflow-wrap: anywhere; }
+.action-source > p:first-child { font-size: 14px; font-weight: 700; }

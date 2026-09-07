@@ -112,3 +112,11 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Added local tests demonstrating detection of leaked rows, missing positive fixtures, role drift, duplicate identities and broken endpoints. All 96 tests pass.
 - Verified the CLI refuses to run without explicit synthetic-project configuration (nonzero exit, no network request). No real Supabase execution occurred. See `docs/live-supabase-checks.md` for setup and remaining write/concurrency gates.
 - No frontend change or preview deployment is required for this verification tooling increment.
+
+## Source-linked session actions — 7 September 2026
+
+- Tracking a job, debtor, payment group or labour record now records stable section/record identities plus original currency, as-of date, target margin, review amount and session import version. JSON downloads retain this context.
+- Repeated tracking uses the source identity rather than display-title matching. Payment groups are order-independent; delimited IDs cannot collide.
+- Actions link back to the source section. Source reimports and relevant settings changes are labelled for review again without changing action status, original amounts or totals.
+- 100 tests pass, including source identity stability, immutable captured context, reimport/settings flags and invalid financial context.
+- These references are session-only and do not store raw source rows or make recovery claims. Same-ID reimports are conservatively flagged even if values match. Persistent finding versions, evidence-backed closure and reconciliation remain unfinished; no automatic resolution is inferred from missing records.

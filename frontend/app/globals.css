@@ -695,3 +695,8 @@ td, .signal, .coverage, .stat p, .stat span, .cloud-form label { font-size: 14px
 
 .import-preview { border: 1px solid var(--border); border-left: 4px solid var(--primary); padding: 20px; margin: 0 0 24px; border-radius: 6px; }
 .import-preview td { max-width: 320px; overflow-wrap: anywhere; white-space: normal; }
+
+.table-paging { margin-top: 16px; font-size: 14px; }
+.table-paging p { color: var(--muted-foreground); margin-bottom: 12px; }
+.table-paging [data-slot='pagination-content'] { flex-wrap: wrap; gap: 8px; }
+.table-paging [data-slot='pagination-item'] span { padding: 0 8px; }

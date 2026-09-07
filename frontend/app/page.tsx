@@ -33,6 +33,12 @@ import {
   sections,
   dateValue,
 } from '../../core/engine.mjs';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+} from '@/components/ui/pagination';
+import { pageWindow } from '../../core/pagination.mjs';
 import { demo, demoDate } from '../../core/demo.mjs';
 import { applyCsvPreview, parseCsv, template } from '../../core/csv.mjs';
 import { useReviewTool } from '@/lib/use-review-tool';
@@ -91,37 +97,97 @@ function Grid({
   headers: string[];
   rows: React.ReactNode[][];
 }) {
+  const [requestedPage, setPage] = useState(0);
+  const window = pageWindow(rows.length, requestedPage);
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          {headers.map((h) => (
-            <TableHead key={h}>{h}</TableHead>
-          ))}
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {rows.length ? (
-          rows.map((row, i) => (
-            <TableRow key={i}>
-              {row.map((cell, j) => (
-                <TableCell key={j}>{cell}</TableCell>
-              ))}
-            </TableRow>
-          ))
-        ) : (
+    <>
+      <Table>
+        <TableHeader>
           <TableRow>
-            <TableCell colSpan={headers.length}>
-              No records loaded. Import a CSV to check this control.
-            </TableCell>
+            {headers.map((h) => (
+              <TableHead key={h}>{h}</TableHead>
+            ))}
           </TableRow>
-        )}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {rows.length ? (
+            rows.slice(window.start, window.end).map((row, i) => (
+              <TableRow key={i}>
+                {row.map((cell, j) => (
+                  <TableCell key={j}>{cell}</TableCell>
+                ))}
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={headers.length}>
+                No records loaded. Import a CSV to check this control.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+      {rows.length > 0 && (
+        <div className="table-paging">
+          <p aria-live="polite">
+            Records {window.start + 1}–{window.end} of {rows.length}. Totals
+            include all records.
+          </p>
+          {window.pages > 1 && (
+            <Pagination aria-label="Review table pages">
+              <PaginationContent>
+                <PaginationItem>
+                  <Button
+                    variant="outline"
+                    disabled={!window.previous}
+                    onClick={() => setPage(0)}
+                  >
+                    First
+                  </Button>
+                </PaginationItem>
+                <PaginationItem>
+                  <Button
+                    variant="outline"
+                    disabled={!window.previous}
+                    onClick={() => setPage(window.page - 1)}
+                  >
+                    Previous
+                  </Button>
+                </PaginationItem>
+                <PaginationItem>
+                  <span>
+                    Page {window.page + 1} of {window.pages}
+                  </span>
+                </PaginationItem>
+                <PaginationItem>
+                  <Button
+                    variant="outline"
+                    disabled={!window.next}
+                    onClick={() => setPage(window.page + 1)}
+                  >
+                    Next
+                  </Button>
+                </PaginationItem>
+                <PaginationItem>
+                  <Button
+                    variant="outline"
+                    disabled={!window.next}
+                    onClick={() => setPage(window.pages - 1)}
+                  >
+                    Last
+                  </Button>
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          )}
+        </div>
+      )}
+    </>
   );
 }
 export default function Home() {
   const [data, setData] = useState<Data>(demo);
+  const [dataVersion, setDataVersion] = useState(0);
   const [mode, setMode] = useState('Demo');
   const [asOf, setAsOf] = useState(demoDate);
   const [currency, setCurrency] = useState('AUD');
@@ -238,6 +304,7 @@ export default function Home() {
         target,
       );
       setData(next);
+      setDataVersion((v) => v + 1);
       setMode('Private session');
       if (mode === 'Demo') {
         setActions([]);
@@ -416,6 +483,7 @@ export default function Home() {
                   <span className="pill">Evidence first</span>
                 </div>
                 <Grid
+                  key={dataVersion}
                   headers={['Exception', 'Amount', 'Next step']}
                   rows={[
                     ...result.debtors
@@ -481,6 +549,7 @@ export default function Home() {
                 costs. Shortfall is relative to your target margin.
               </p>
               <Grid
+                key={dataVersion}
                 headers={[
                   'Job',
                   'Revenue',
@@ -520,6 +589,7 @@ export default function Home() {
                 overdue; it is a follow-up priority, not a credit score.
               </p>
               <Grid
+                key={dataVersion}
                 headers={[
                   'Customer',
                   'Due date',
@@ -562,6 +632,7 @@ export default function Home() {
                 </p>
               ) : (
                 <Grid
+                  key={dataVersion}
                   headers={[
                     'Supplier',
                     'Invoice',
@@ -591,6 +662,7 @@ export default function Home() {
                 deduction.
               </p>
               <Grid
+                key={dataVersion}
                 headers={[
                   'Crew / person',
                   'Job',
@@ -879,6 +951,7 @@ export default function Home() {
                   onClick={() => {
                     cancelImport();
                     setData(empty);
+                    setDataVersion((v) => v + 1);
                     setActions([]);
                     setAnswers({});
                     setMode('Private session');
@@ -892,6 +965,7 @@ export default function Home() {
                   onClick={() => {
                     cancelImport();
                     setData(demo);
+                    setDataVersion((v) => v + 1);
                     setActions([]);
                     setAnswers({});
                     setAsOf(demoDate);

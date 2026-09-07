@@ -82,3 +82,10 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Apply revalidates against current review settings and constructs replacement data without mutating the live dataset. No file content is uploaded or persisted.
 - 79 tests pass, including replacement isolation, demo clearing, empty-file semantics and invalid-preview rollback. Browser interaction testing is not claimed.
 - Column mapping, period metadata, worker parsing and main-table pagination remain unfinished.
+
+## Bounded review tables — 7 September 2026
+
+- Main financial review tables display 50 rows per page with first/previous/next/last controls, record range and total count. Financial totals continue to use all records.
+- Applying an import, clearing a session or restoring demo data resets pages. Smaller result sets clamp stale page requests safely.
+- 82 tests pass, including traversing all 10,000 supported records exactly once, final-page bounds, empty results and invalid paging input.
+- This bounds rendered table rows, not analysis/parsing CPU or all React element construction. Worker parsing and column mapping remain next import priorities. Browser interaction testing is not claimed.

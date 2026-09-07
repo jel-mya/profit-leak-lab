@@ -149,3 +149,10 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - The mode intentionally leaves a synthetic action/history and never deletes audit records. Missing write opt-in fails before network activity. Runtime secrets and returned records are not printed.
 - All 116 local tests pass, including injected failure detection for duplicate actions, permission leaks, double winners and broken history/replay results. Verified CLI refusal without write opt-in; no live Supabase execution occurred.
 - No frontend change in this tooling increment. Preview source transfer for the earlier client change remains awaiting the user's explicit approval after automatic approval review rejected it; do not retry that transfer without the response.
+
+## Preserve imported review currency — 8 September 2026
+
+- Currency changes are blocked while imported records are loaded, preventing relabelling unchanged amounts as another currency. Empty sessions and fictional demos can still choose supported currencies.
+- Pending file reads, mappings and previews also retain their currency context; cancel the import before switching. The UI explains the clear-session workflow without silently discarding data.
+- 119 tests pass, covering loaded imports, pending previews and supported empty-session choices. This does not detect mixed currencies inside an export; users must still supply a consistent currency/tax basis.
+- Preview publication remains awaiting explicit source-transfer approval; this increment is delivered to canonical GitHub only.

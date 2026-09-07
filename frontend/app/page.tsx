@@ -46,6 +46,7 @@ import {
   type ActionSource,
 } from '../../core/action-source.mjs';
 import { requireActionOutcome } from '../../core/action-outcome.mjs';
+import { reviewCurrency } from '../../core/review-currency.mjs';
 import { demo, demoDate } from '../../core/demo.mjs';
 import {
   applyCsvPreview,
@@ -462,9 +463,30 @@ export default function Home() {
           <label>
             Currency
             <Choice
-              label="Currency"
+              label="Review currency — choose before importing"
               value={currency}
-              onChange={setCurrency}
+              onChange={(value) => {
+                try {
+                  setCurrency(
+                    reviewCurrency(
+                      currency,
+                      value,
+                      mode !== 'Demo' &&
+                        sections.some((section) => data[section].length > 0),
+                      busy || !!source || !!preview,
+                    ),
+                  );
+                  setMessage(
+                    'Review currency selected. No currency conversion is performed.',
+                  );
+                } catch (error) {
+                  setMessage(
+                    error instanceof Error
+                      ? error.message
+                      : 'Currency cannot be changed in this review.',
+                  );
+                }
+              }}
               items={['AUD', 'USD', 'GBP', 'CAD', 'NZD']}
             />
           </label>
@@ -1134,8 +1156,9 @@ export default function Home() {
                       : `Applying this file replaces the ${data[preview.section]?.length ?? 0} current ${preview.section} records. Other sections and your action list stay in place.`}
                   </p>
                   <p className="muted">
-                    Currency: {currency}. Review date: {asOf}. Confirm these
-                    match your export; no currency conversion is performed.
+                    Currency: {currency} (retained while imported records are
+                    loaded). Review date: {asOf}. Confirm these match your
+                    export; no currency conversion is performed.
                   </p>
                   {preview.rows.length === 0 ? (
                     <p className="risk">

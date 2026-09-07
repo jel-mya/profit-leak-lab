@@ -33,8 +33,18 @@ Run `npm run test:live:reads`. Missing/invalid settings exit nonzero and explici
 - No rows for the other tenant's known business/action/history IDs.
 - Anonymous financial-table reads return no rows or the expected privilege denial. Missing-table and other unexpected API errors fail the check.
 
-Only selects are issued to financial tables. Authentication creates temporary sessions; the runner attempts local-scope sign-out for every client, including when checks fail. Sign-out failures produce a nonzero result and a request to revoke those disposable sessions manually. Requests have a 15-second timeout. Output includes fixed check descriptions only; it suppresses SDK errors, credentials, record contents and fixture IDs. Do not enable HTTP/debug logging around the run.
+In read-only mode, only selects are issued to financial tables. Authentication creates temporary sessions; the runner attempts local-scope sign-out for every client, including when checks fail. Sign-out failures produce a nonzero result and a request to revoke those disposable sessions manually. Requests have a 15-second timeout. Output includes fixed check descriptions only; it suppresses SDK errors, credentials, record contents and fixture IDs. Do not enable HTTP/debug logging around the run.
 
 ## Remaining gates
 
-This does not verify write permissions, stale-write conflict HTTP mapping, simultaneous update/onboarding locks, revoked access, JWT expiry, anonymous sign-up configuration, private schema exposure, browser behaviour, backups/restores or retention/deletion policies. Keep the connected workspace disabled for customers until those checks and operational requirements are satisfied. Record actual execution date, code commit and pass/fail status without credentials or record data. A unit-test pass is not a live-project pass.
+The read-only mode does not verify writes. The optional write mode below adds creation retries, update permissions, competing revision checks and event consistency. Neither mode covers revoked access, JWT expiry, onboarding concurrency, sustained multi-connection load, anonymous sign-up configuration, private schema exposure, browser behaviour, backups/restores or retention/deletion policies. Keep the connected workspace disabled for customers until those checks and operational requirements are satisfied. Record actual execution date, code commit and pass/fail status without credentials or record data. A unit-test pass is not a live-project pass.
+
+## Optional synthetic write checks
+
+Run `npm run test:live:writes` only on the disposable synthetic project, with all read-check settings plus `SUPABASE_LIVE_WRITE_CONFIRM=APPEND_SYNTHETIC_HISTORY`. The additional opt-in is mandatory and checked before authentication or network access. Apply the creation-request and outcome migrations first. Read isolation must pass before writes begin.
+
+The runner generates a new request UUID and sends two matching creation requests. It requires the same action ID, conflicts on changed payloads, verifies denied foreign/viewer/anonymous/direct-table updates, and submits two updates with the same expected revision. It requires one success and one PT409 response, followed by exactly one creation event and one update event. It checks that replaying creation preserves the winning update.
+
+This intentionally leaves a `Synthetic live concurrency check` action and its append-only events. It never deletes history or tries to clean up customer data. Every run may add a synthetic record, including an unsuccessful run. Review/dispose of the test project through approved administration. The requests are launched together from the client; this is a functional competing-request check, not a sustained load test or proof of every possible transaction interleaving.
+
+Local mocked tests verify that the checker detects duplicates, permission leaks, two winners, missing history and overwritten replay results. They are not evidence of a live Supabase pass. As of this implementation, no live read or write run has occurred.

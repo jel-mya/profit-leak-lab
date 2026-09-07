@@ -142,3 +142,10 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Added pending-request controls to retry original values, reload saved actions or deliberately discard after checking. A confirmed creation clears its draft before refreshing the list; failed reads report that the write succeeded.
 - 114 tests pass, including key reuse, payload-change blocking, explicit abandonment, validation failure cleanup, sign-out clearing and exact RPC payload forwarding.
 - Pending requests remain memory-only and are lost across sign-out/reload/business switching. Live Supabase migrations/API/concurrency and browser flows remain unverified; cloud configuration stays disabled.
+
+## Live write/concurrency verification preparation — 8 September 2026
+
+- Added separately opted-in synthetic write mode after mandatory read-isolation checks. It checks matching creation requests, payload conflict, denied updates, competing same-revision updates and exact history consistency.
+- The mode intentionally leaves a synthetic action/history and never deletes audit records. Missing write opt-in fails before network activity. Runtime secrets and returned records are not printed.
+- All 116 local tests pass, including injected failure detection for duplicate actions, permission leaks, double winners and broken history/replay results. Verified CLI refusal without write opt-in; no live Supabase execution occurred.
+- No frontend change in this tooling increment. Preview source transfer for the earlier client change remains awaiting the user's explicit approval after automatic approval review rejected it; do not retry that transfer without the response.

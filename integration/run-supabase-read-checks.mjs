@@ -1,11 +1,15 @@
+import { randomUUID } from 'node:crypto';
+import { verifyWriteIsolation } from './supabase-write-checks.mjs';
 import { createRequire } from 'node:module';
 import { workspaceConfig } from '../core/workspace-config.mjs';
 import { verifyReadIsolation } from './supabase-read-checks.mjs';
 
+const writes = process.argv.includes('--writes');
+const writeAuthorised = !writes || process.env.SUPABASE_LIVE_WRITE_CONFIRM === 'APPEND_SYNTHETIC_HISTORY';
 const required = ['LIVE_OWNER_A_EMAIL', 'LIVE_OWNER_A_PASSWORD', 'LIVE_OWNER_B_EMAIL', 'LIVE_OWNER_B_PASSWORD', 'LIVE_VIEWER_A_EMAIL', 'LIVE_VIEWER_A_PASSWORD', 'LIVE_BUSINESS_A_ID', 'LIVE_ACTION_A_ID', 'LIVE_BUSINESS_B_ID', 'LIVE_ACTION_B_ID'];
 const config = workspaceConfig({ ...process.env, CLOUD_WORKSPACE_ENABLED: 'true' });
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-if (process.env.SUPABASE_LIVE_TEST_CONFIRM !== 'SYNTHETIC_ONLY' || !config || required.some(key => !process.env[key]) || required.filter(key => key.endsWith('_ID')).some(key => !uuid.test(process.env[key]))) {
+if (!writeAuthorised || process.argv.slice(2).some(arg => arg !== '--writes') || process.env.SUPABASE_LIVE_TEST_CONFIRM !== 'SYNTHETIC_ONLY' || !config || required.some(key => !process.env[key]) || required.filter(key => key.endsWith('_ID')).some(key => !uuid.test(process.env[key]))) {
   console.error('Live checks not run: provide a disposable synthetic project and all documented environment settings. See docs/live-supabase-checks.md.');
   process.exitCode = 1;
 } else {
@@ -25,10 +29,13 @@ if (process.env.SUPABASE_LIVE_TEST_CONFIRM !== 'SYNTHETIC_ONLY' || !config || re
       a: { business: process.env.LIVE_BUSINESS_A_ID, action: process.env.LIVE_ACTION_A_ID },
       b: { business: process.env.LIVE_BUSINESS_B_ID, action: process.env.LIVE_ACTION_B_ID },
     }, message => console.log(`PASS: ${message}`));
-    console.log('Live read isolation passed. Write permissions, concurrency, revocation and browser flows are still separate release gates.');
+    if (writes) {
+      await verifyWriteIsolation({ users: clients, anonymous }, process.env.LIVE_BUSINESS_A_ID, randomUUID(), message => console.log('PASS: ' + message));
+      console.log('Live read/write checks passed. Synthetic records remain. Revocation, expiry, onboarding concurrency and browser/operational checks remain separate gates.');
+    } else console.log('Live read isolation passed. Write permissions, concurrency, revocation and browser flows are still separate release gates.');
   } catch {
     // Never print SDK exceptions, fixture values, credentials or server payloads.
-    console.error('Live read isolation failed. Check synthetic fixture provisioning and project configuration privately. No financial writes were attempted.');
+    console.error(writes ? 'Live verification failed. Synthetic test actions/history may remain; inspect the disposable project privately.' : 'Live read isolation failed. Check synthetic fixture provisioning and project configuration privately. No financial writes were attempted.');
     process.exitCode = 1;
   } finally {
     for (const client of clients) {

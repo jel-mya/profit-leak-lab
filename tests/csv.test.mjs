@@ -21,3 +21,31 @@ test('formula-shaped amounts are rejected; text is retained as inert data', () =
   assert.throws(() => parseCsv(template('debtors') + 'D1,Example,2026-09-01,=2+2', 'debtors'));
   assert.equal(parseCsv(template('debtors') + 'D1,<script>alert(1)</script>,2026-09-01,20', 'debtors')[0].customer, '<script>alert(1)</script>');
 });
+
+test('applying a reviewed file replaces only its section without mutating source state', async () => {
+  const { applyCsvPreview } = await import('../core/csv.mjs');
+  const data = { jobs: [], debtors: [{ id: 'old', customer: 'Synthetic', dueDate: '2026-09-01', outstanding: '1' }], payments: [], labour: [] };
+  const preview = { section: 'debtors', rows: parseCsv(template('debtors') + 'new,Synthetic,2026-09-01,2', 'debtors') };
+  const next = applyCsvPreview(data, preview, false, '2026-09-07', 25);
+  assert.equal(next.debtors[0].id, 'new');
+  assert.equal(data.debtors[0].id, 'old');
+  next.debtors[0].customer = 'Changed';
+  assert.equal(preview.rows[0].customer, 'Synthetic');
+});
+test('first reviewed import clears all demo sections and header-only preview clears its section', async () => {
+  const { applyCsvPreview } = await import('../core/csv.mjs');
+  const { demo } = await import('../core/demo.mjs');
+  const next = applyCsvPreview(demo, { section: 'debtors', rows: [] }, true, '2026-09-07', 25);
+  assert.ok(Object.values(next).every(rows => rows.length === 0));
+  assert.ok(demo.jobs.length > 0);
+  const emptySection = applyCsvPreview(demo, { section: 'debtors', rows: [] }, false, '2026-09-07', 25);
+  assert.equal(emptySection.debtors.length, 0);
+  assert.deepEqual(emptySection.jobs, demo.jobs);
+});
+test('invalid preview fails without modifying any live records', async () => {
+  const { applyCsvPreview } = await import('../core/csv.mjs');
+  const { demo } = await import('../core/demo.mjs');
+  const before = structuredClone(demo);
+  assert.throws(() => applyCsvPreview(demo, { section: 'debtors', rows: [{ id: 'bad' }] }, false, '2026-09-07', 25));
+  assert.deepEqual(demo, before);
+});

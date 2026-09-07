@@ -34,7 +34,7 @@ import {
   dateValue,
 } from '../../core/engine.mjs';
 import { demo, demoDate } from '../../core/demo.mjs';
-import { parseCsv, template } from '../../core/csv.mjs';
+import { applyCsvPreview, parseCsv, template } from '../../core/csv.mjs';
 import { useReviewTool } from '@/lib/use-review-tool';
 
 type Data = Record<string, Record<string, string | number>[]>;
@@ -134,6 +134,17 @@ export default function Home() {
   const [actions, setActions] = useState<Action[]>([]);
   const [title, setTitle] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
+  const importGeneration = useRef(0);
+  const [preview, setPreview] = useState<{
+    section: string;
+    rows: Record<string, string>[];
+  } | null>(null);
+  function cancelImport() {
+    importGeneration.current++;
+    setPreview(null);
+    setBusy(false);
+    if (fileRef.current) fileRef.current.value = '';
+  }
   const result = useMemo(
     () => analyse(data, asOf, target),
     [data, asOf, target],
@@ -190,12 +201,42 @@ export default function Home() {
   }
   async function importFile(file?: File) {
     if (!file) return;
+    const generation = ++importGeneration.current;
+    const selectedSection = section;
+    setPreview(null);
     setBusy(true);
     try {
       if (file.size > 2 * 1024 * 1024) throw new Error('CSV exceeds 2 MB.');
-      const rows = parseCsv(await file.text(), section);
-      const next = { ...(mode === 'Demo' ? empty : data), [section]: rows };
-      analyse(next, asOf, target);
+      const rows = parseCsv(await file.text(), selectedSection);
+      if (generation !== importGeneration.current) return;
+      setPreview({ section: selectedSection, rows });
+      setMessage(
+        'CSV checked. Review the preview, then apply it. Current records have not changed.',
+      );
+    } catch (error) {
+      if (generation === importGeneration.current)
+        setMessage(
+          error instanceof Error
+            ? error.message
+            : 'Import failed. Previous data retained.',
+        );
+    } finally {
+      if (generation === importGeneration.current) {
+        setBusy(false);
+        if (fileRef.current) fileRef.current.value = '';
+      }
+    }
+  }
+  function applyImport() {
+    if (!preview) return;
+    try {
+      const next = applyCsvPreview(
+        data,
+        preview,
+        mode === 'Demo',
+        asOf,
+        target,
+      );
       setData(next);
       setMode('Private session');
       if (mode === 'Demo') {
@@ -203,17 +244,15 @@ export default function Home() {
         setAnswers({});
       }
       setMessage(
-        `${rows.length} ${section} records loaded. ${mode === 'Demo' ? 'All demo records cleared. ' : ''}This replaces the previous records for this section.`,
+        `${preview.rows.length} ${preview.section} records loaded. ${mode === 'Demo' ? 'All demo records cleared. ' : ''}Previous records for this section replaced.`,
       );
+      cancelImport();
     } catch (error) {
       setMessage(
         error instanceof Error
           ? error.message
-          : 'Import failed. Previous data retained.',
+          : 'Import could not be applied. Previous data retained.',
       );
-    } finally {
-      setBusy(false);
-      if (fileRef.current) fileRef.current.value = '';
     }
   }
   const track = (label: string) => (
@@ -715,7 +754,10 @@ export default function Home() {
                   <Choice
                     label="Import record type"
                     value={section}
-                    onChange={setSection}
+                    onChange={(value) => {
+                      cancelImport();
+                      setSection(value);
+                    }}
                     items={sections}
                   />
                 </label>
@@ -738,6 +780,76 @@ export default function Home() {
                   />
                 </label>
               </div>
+              {busy && (
+                <Button variant="outline" onClick={cancelImport}>
+                  Cancel file read
+                </Button>
+              )}
+              {preview && (
+                <section className="import-preview" aria-label="CSV preview">
+                  <h3>
+                    Review {preview.rows.length} {preview.section} records
+                  </h3>
+                  <p>
+                    {mode === 'Demo'
+                      ? 'Applying this file removes all fictional demo records, demo actions and checklist answers.'
+                      : `Applying this file replaces the ${data[preview.section]?.length ?? 0} current ${preview.section} records. Other sections and your action list stay in place.`}
+                  </p>
+                  <p className="muted">
+                    Currency: {currency}. Review date: {asOf}. Confirm these
+                    match your export; no currency conversion is performed.
+                  </p>
+                  {preview.rows.length === 0 ? (
+                    <p className="risk">
+                      This file has headers only. Applying it clears this
+                      section.
+                    </p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            {Object.keys(preview.rows[0]).map((key) => (
+                              <TableHead key={key}>{key}</TableHead>
+                            ))}
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {preview.rows.slice(0, 5).map((row, index) => (
+                            <TableRow key={index}>
+                              {Object.entries(row).map(([key, value]) => (
+                                <TableCell key={key}>{value}</TableCell>
+                              ))}
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                      <p className="muted">
+                        Showing the first {Math.min(5, preview.rows.length)}{' '}
+                        records. All records passed file validation.
+                      </p>
+                    </div>
+                  )}
+                  <div className="import-actions">
+                    <Button onClick={applyImport}>
+                      {preview.rows.length === 0
+                        ? 'Apply empty file and clear section'
+                        : 'Apply reviewed import'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        cancelImport();
+                        setMessage(
+                          'Import cancelled. Current records retained.',
+                        );
+                      }}
+                    >
+                      Cancel import
+                    </Button>
+                  </div>
+                </section>
+              )}
               <ul>
                 <li>
                   Use the exact template headers, one currency and tax-exclusive
@@ -765,6 +877,7 @@ export default function Home() {
                 <Button
                   variant="outline"
                   onClick={() => {
+                    cancelImport();
                     setData(empty);
                     setActions([]);
                     setAnswers({});
@@ -777,6 +890,7 @@ export default function Home() {
                 <Button
                   variant="outline"
                   onClick={() => {
+                    cancelImport();
                     setData(demo);
                     setActions([]);
                     setAnswers({});

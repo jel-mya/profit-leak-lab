@@ -74,3 +74,11 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Recoverable page-load network errors return to business selection with records and paging cleared. Late access errors cannot erase a newer authorised selection.
 - 76 automated tests pass, including regressions for all affected paths. Live Supabase verification remains outstanding; the cloud workspace stays disabled.
 - The previously delivered charcoal/orange trade palette is preserved.
+
+## Review before applying imports — 7 September 2026
+
+- CSV selection now stages validated records in browser memory. The preview shows the first five rows, total count, current currency/date and explicit replacement consequences.
+- Users must apply or cancel; header-only files explicitly warn that the section will be cleared. Changing record type, clearing the session or restoring the demo invalidates pending file reads.
+- Apply revalidates against current review settings and constructs replacement data without mutating the live dataset. No file content is uploaded or persisted.
+- 79 tests pass, including replacement isolation, demo clearing, empty-file semantics and invalid-preview rollback. Browser interaction testing is not claimed.
+- Column mapping, period metadata, worker parsing and main-table pagination remain unfinished.

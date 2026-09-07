@@ -1,4 +1,4 @@
-import { columns, validateRows } from './engine.mjs';
+import { analyse, columns, validateRows } from './engine.mjs';
 export function parseCsv(text, section) {
   if (!columns[section]) throw new Error('Unknown import type.');
   if (new TextEncoder().encode(text).length > 2 * 1024 * 1024) throw new Error('CSV exceeds 2 MB.');
@@ -31,3 +31,13 @@ export function parseCsv(text, section) {
   return result;
 }
 export function template(section) { return columns[section].join(',') + '\n'; }
+
+// Build the replacement without mutating live state; callers commit only on success.
+export function applyCsvPreview(data, preview, isDemo, asOf, target) {
+  if (!preview || !columns[preview.section]) throw new Error('Unknown import type.');
+  validateRows(preview.section, preview.rows);
+  const base = isDemo ? Object.fromEntries(Object.keys(columns).map(key => [key, []])) : data;
+  const next = structuredClone({ ...base, [preview.section]: preview.rows });
+  analyse(next, asOf, target);
+  return next;
+}

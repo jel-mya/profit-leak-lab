@@ -14,7 +14,7 @@ export function createSupabasePort(client) {
       return data.user;
     },
     memberships() {
-      return unwrap(client.from('memberships').select('business_id,role').order('business_id'));
+      return unwrap(client.from('memberships').select('business_id,role,businesses(name,currency)').order('business_id'));
     },
     async actions(businessId, offset = 0) {
       if (!Number.isSafeInteger(offset) || offset < 0) throw new WorkspaceError('INVALID_PAGE');
@@ -37,6 +37,12 @@ export function createSupabasePort(client) {
     },
     createBusiness(name, currency) {
       return unwrap(client.rpc('create_business', { p_name: name, p_currency: currency }).single());
+    },
+    createAction(businessId, draft) {
+      return unwrap(client.from('control_actions').insert({
+        business_id: businessId, title: draft.title, owner_label: draft.owner_label,
+        due_date: draft.due_date, status: draft.status, note: draft.note,
+      }).select('id,business_id,title,owner_label,due_date,status,note,revision').single());
     },
   };
 }

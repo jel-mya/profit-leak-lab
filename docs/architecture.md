@@ -1,6 +1,6 @@
 # Architecture and security boundary
 
-The first working increment is a stateless review application, not yet an authenticated production SaaS. React/Vinext renders a Cloudflare-compatible frontend. The pure engine in `core/` operates in the browser; CSV content never enters an API request. No imports, actions or health answers go into browser storage, telemetry, cookies, logs or the database. Actions can be explicitly downloaded as JSON. Refreshing loses session state.
+The first working increment is a stateless review application, not yet an authenticated production SaaS. React/Vinext renders a Cloudflare-compatible frontend. The pure engine in `core/` operates in the browser; CSV content never enters an API request. On the session review screen, no imports, actions or health answers go into browser storage, telemetry, cookies, logs or the database. The separate opt-in workspace persists action records only when configured; see workspace-client.md. Actions can be explicitly downloaded as JSON. Refreshing loses session state.
 
 The initial date and records are fixed fictional demo fixtures. Importing a first file atomically removes all demo records; later imports replace one section. Failed validation preserves the prior dataset. CSV supports quoted fields, BOM and CRLF. Reject unexpected headers, duplicate IDs, malformed dates, negative amounts, unsafe integers, more than 10,000 rows or more than 2 MB per file. React escapes text. Exported actions use JSON to avoid spreadsheet formula execution.
 
@@ -26,7 +26,7 @@ Before storing real customer financial data: execute the migration and two-tenan
 
 ## Action persistence contract
 
-`202609070001_action_history.sql` supplies the database portion of this contract; it is not yet wired to the session-only UI or applied to a live Supabase project.
+`202609070001_action_history.sql` supplies the database portion of this contract; the opt-in workspace uses its revision RPC, but it has not been applied to a live Supabase project.
 
 - Create an action by inserting only `business_id`, `title`, `owner_label`, `due_date`, `status` and `note`. Omitted optional values use table defaults. Identity, author, timestamps and initial revision come from the database.
 - Update using `public.update_control_action(p_action_id, p_expected_revision, p_title, p_owner_label, p_due_date, p_status, p_note)`. Supply the complete editable state and the revision last read; omitted fields are not a partial-update contract. The RPC returns the saved action.

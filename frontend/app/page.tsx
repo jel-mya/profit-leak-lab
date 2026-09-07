@@ -1,5 +1,6 @@
 'use client';
 import { useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import {
   ArrowUpRight,
   ShieldCheck,
@@ -233,6 +234,7 @@ export default function Home() {
         <span className="session-tag">
           <ShieldCheck size={15} /> {mode} · browser memory only
         </span>
+        <Link href="/workspace">Connected workspace</Link>
       </header>
       <main id="main">
         <div className="heading-row">

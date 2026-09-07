@@ -128,3 +128,34 @@ test('Supabase adapter verifies users through Auth and strips server error detai
   assert.equal((await port.verifyUser()).id, user.id);
   await assert.rejects(port.createBusiness('Synthetic', 'AUD'), e => e.code === 'PT409' && !e.message.includes('sensitive'));
 });
+test('creation strips identity fields and ignores a late completion after sign-out', async () => {
+  const pending = deferred(); let captured;
+  const { workspace } = setup({ createAction: (businessId, values) => { captured = { businessId, values }; return pending.promise; } });
+  await ready(workspace);
+  const creating = workspace.create({ ...draft, created_by: 'spoofed', id: 'spoofed' });
+  assert.deepEqual(captured, { businessId: 'a', values: draft });
+  workspace.disconnect(); pending.resolve(record);
+  await assert.rejects(creating, e => e.code === 'STALE_REQUEST');
+  assert.equal(workspace.snapshot().phase, 'signedOut');
+});
+test('onboarding refreshes verified memberships and cannot revive a disconnected session', async () => {
+  const pending = deferred(); const { workspace } = setup({ createBusiness: () => pending.promise });
+  await workspace.connect(); const onboarding = workspace.onboard('Synthetic', 'AUD');
+  workspace.disconnect(); pending.resolve({ id: 'new', name: 'Synthetic', currency: 'AUD' });
+  await assert.rejects(onboarding, e => e.code === 'STALE_REQUEST');
+  assert.equal(workspace.snapshot().userId, null);
+});
+test('page selection passes a validated offset and tracks continuation', async () => {
+  let offset;
+  const { workspace } = setup({ actions: async (id, page) => { offset = page; return { rows: [], hasMore: true }; } });
+  await workspace.connect(); await workspace.selectBusiness('a', 100);
+  assert.equal(offset, 100); assert.equal(workspace.snapshot().offset, 100);
+  await assert.rejects(workspace.selectBusiness('a', -1), e => e.code === 'INVALID_PAGE');
+});
+test('network failure while reloading a conflict retains the draft', async () => {
+  const { workspace } = setup({ saveAction: async () => { throw fail('PT409'); }, action: async () => { throw fail('NETWORK'); } });
+  await ready(workspace); await assert.rejects(workspace.save(record.id, draft));
+  await assert.rejects(workspace.reloadConflict());
+  assert.equal(workspace.snapshot().phase, 'conflict');
+  assert.deepEqual(workspace.snapshot().conflict.draft, draft);
+});

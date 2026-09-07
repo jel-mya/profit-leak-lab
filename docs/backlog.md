@@ -58,3 +58,12 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Session/tenant changes invalidate late responses; access loss clears cached financial state. Conflict drafts survive until explicit reload and reconciliation; no automatic write retry occurs.
 - All 65 local tests pass, including 13 client lifecycle/adapter tests. No runtime dependency, deployed database or preview UI changed.
 - The new modules are not yet wired into the screens. Follow `docs/workspace-client.md` for SDK sign-in/sign-out integration, pagination, conflict UI and live verification requirements.
+
+## Opt-in workspace UI — 7 September 2026
+
+- Added verified account sign-in, explicit business selection, starter business creation, action creation/editing, pagination and manual conflict reconciliation at /workspace.
+- Sessions stay in memory; server configuration defaults off and accepts only a public Supabase project URL and modern publishable key.
+- Worker HTML uses per-request script nonces and restricts connections to the configured Supabase project.
+- Live Auth/PostgREST and customer-data operational checks remain outstanding; no real project was connected.
+
+- Validation: 72 tests pass, application lint/type checks and production build pass. Local production HTTP checks verified both screens, unique CSP nonces on all 21 script tags per response, no-store headers and disabled configuration endpoint.

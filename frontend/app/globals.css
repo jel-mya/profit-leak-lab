@@ -615,3 +615,29 @@ footer {
     grid-template-columns: 1fr;
   }
 }
+.cloud-workspace {
+  max-width: 1200px;
+}
+.cloud-workspace > .feedback {
+  display: block;
+  margin: 18px 0;
+}
+.cloud-form {
+  display: grid;
+  gap: 18px;
+  max-width: 520px;
+  margin-top: 20px;
+}
+.cloud-form label {
+  font-size: 12px;
+}
+.cloud-form button[type='submit'] {
+  justify-self: start;
+}
+.business-choice {
+  margin: 0 12px 16px 0;
+}
+.conflict-review {
+  padding: 18px 0;
+  border-bottom: 1px solid var(--border);
+}

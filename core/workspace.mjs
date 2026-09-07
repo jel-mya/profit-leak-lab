@@ -22,12 +22,12 @@ function draftFields(draft) {
 }
 export function createWorkspace(port) {
   let generation = 0;
-  let state = { phase: 'signedOut', userId: null, memberships: [], businessId: null, actions: [], hasMore: false, conflict: null, error: null };
+  let state = { phase: 'signedOut', userId: null, memberships: [], businessId: null, actions: [], hasMore: false, offset: 0, conflict: null, error: null };
   const listeners = new Set();
   function publish(patch) { state = { ...state, ...patch }; for (const listener of listeners) listener(structuredClone(state)); }
   function clear(phase = 'signedOut', error = null) {
     generation++;
-    publish({ phase, userId: null, memberships: [], businessId: null, actions: [], hasMore: false, conflict: null, error });
+    publish({ phase, userId: null, memberships: [], businessId: null, actions: [], hasMore: false, offset: 0, conflict: null, error });
   }
   function current(ticket) { if (ticket !== generation) throw new WorkspaceError('STALE_REQUEST'); }
   function code(error) { return error?.code ?? 'REQUEST_FAILED'; }
@@ -48,14 +48,15 @@ export function createWorkspace(port) {
         throw error;
       }
     },
-    async selectBusiness(id) {
+    async selectBusiness(id, offset = 0) {
+      if (!Number.isSafeInteger(offset) || offset < 0) throw new WorkspaceError('INVALID_PAGE');
       if (!state.userId || !state.memberships.some(m => m.business_id === id)) throw new WorkspaceError('ACCESS_DENIED');
       const ticket = ++generation;
       publish({ phase: 'loading', businessId: id, actions: [], hasMore: false, conflict: null, error: null });
       try {
-        const result = await port.actions(id); current(ticket);
+        const result = await port.actions(id, offset); current(ticket);
         if (result.rows.some(a => a.business_id !== id)) throw new WorkspaceError('INVALID_RESPONSE');
-        publish({ phase: 'ready', actions: result.rows, hasMore: result.hasMore });
+        publish({ phase: 'ready', actions: result.rows, hasMore: result.hasMore, offset });
       } catch (error) {
         if (ticket === generation) publish({ phase: 'chooseBusiness', businessId: null, actions: [], hasMore: false, error: code(error) });
         throw error;
@@ -94,7 +95,10 @@ export function createWorkspace(port) {
         if (latest.id !== conflict.id || latest.business_id !== state.businessId) throw new WorkspaceError('INVALID_RESPONSE');
         publish({ conflict: { ...conflict, current: latest } });
       } catch (error) {
-        if (ticket === generation) clear('signedOut', 'ACCESS_LOST');
+        if (ticket === generation) {
+          if (['42501', 'PGRST301', 'PGRST302', 'PGRST116', 'INVALID_RESPONSE'].includes(code(error))) clear('signedOut', 'ACCESS_LOST');
+          else publish({ error: code(error) });
+        }
         throw error;
       }
     },
@@ -104,6 +108,40 @@ export function createWorkspace(port) {
       const latest = state.conflict.current;
       publish({ phase: 'ready', actions: state.actions.map(a => a.id === latest.id ? latest : a) });
       return workspace.save(latest.id, mergedDraft);
+    },
+    async create(draft) {
+      if (state.phase !== 'ready') throw new WorkspaceError('NOT_READY');
+      if (!state.memberships.some(m => m.business_id === state.businessId && ['owner', 'editor'].includes(m.role))) throw new WorkspaceError('ACCESS_DENIED');
+      const values = draftFields(draft);
+      const id = state.businessId;
+      const ticket = ++generation;
+      publish({ phase: 'saving', error: null });
+      try {
+        const created = await port.createAction(id, values); current(ticket);
+        if (created.business_id !== id) throw new WorkspaceError('INVALID_RESPONSE');
+        // Return the created record without assuming it falls on the current page.
+        publish({ phase: 'ready' });
+        return structuredClone(created);
+      } catch (error) {
+        if (ticket === generation) {
+          if (['42501', 'PGRST301', 'PGRST302'].includes(code(error))) clear('signedOut', 'ACCESS_LOST');
+          else publish({ phase: 'ready', error: code(error) });
+        }
+        throw error;
+      }
+    },
+    async onboard(name, currency) {
+      if (state.phase !== 'chooseBusiness' || !state.userId) throw new WorkspaceError('NOT_READY');
+      const ticket = ++generation;
+      publish({ phase: 'loading', error: null });
+      try {
+        const business = await port.createBusiness(name, currency); current(ticket);
+        await workspace.connect();
+        return business;
+      } catch (error) {
+        if (ticket === generation) publish({ phase: 'chooseBusiness', error: code(error) });
+        throw error;
+      }
     },
   };
   return workspace;

@@ -28,12 +28,12 @@ Choose an as-of date, a single currency and target margin. Review each control a
 
 Under **Import**, download the appropriate blank CSV template and load jobs, debtors, payments or labour. The first successful import removes all demo data. Every subsequent import replaces its section, never silently appends. Failed imports preserve the previous data. A header-only file explicitly clears its section. Limits: 2 MB and 10,000 rows per file; exact headers, unique IDs, ISO dates and non-negative amounts with at most two decimal places. No tax/currency conversion. Do not mix currencies or inconsistent tax bases.
 
-Data is processed in browser memory and not uploaded or persisted. Refreshing clears imports, checklist answers and actions. Downloads stay on your device and may contain sensitive information; they never belong in Git. No live accounting connectors, authentication, billing, cloud data persistence or payment actions are enabled in this release.
+Data is processed in browser memory and not uploaded or persisted. Refreshing clears imports, checklist answers and actions. Downloads stay on your device and may contain sensitive information; they never belong in Git. The separate `/workspace` route supports an opt-in authenticated action workspace. It is disabled by default; no live accounting connectors, billing or payment actions are enabled.
 
 ## Deploy and persistence
 
 Cloudflare-compatible Worker build: deploy `frontend/dist/server/wrangler.json` with Wrangler after configuring your own approved Cloudflare project. Do not deploy the development server. The optional Sites preview uses the non-secret project metadata in `frontend/.openai/hosting.json`; GitHub remains canonical. Hosting source mirrors must contain the exact canonical commit and must not become a second development codebase.
 
-Supabase SQL is in `supabase/migrations/`. It supplies tenant isolation and least-privilege action tables; it does not create an account or connect the application. Copy `.env.example` to an ignored environment file only when implementing authenticated persistence. Never add a Supabase service-role key to frontend environment variables.
+Supabase SQL is in `supabase/migrations/`. It supplies tenant isolation and least-privilege action tables; it does not create an account or connect the application. See [workspace configuration](docs/workspace-client.md) before enabling the pilot. Copy `.env.example` only to an ignored environment file. Never add a Supabase service-role key to frontend environment variables.
 
 Read [strategy](config.md), [architecture/security](docs/architecture.md) and [delivery backlog](docs/backlog.md). Production customer-data storage is gated on live RLS verification, authentication, audit history and operational/privacy controls.

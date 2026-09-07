@@ -90,3 +90,8 @@ test('optional currency checking validates every row without converting or impor
   assert.throws(() => parseMappedCsv(header + row + 'AUD', 'debtors', mapping, { column: 'missing', currency: 'AUD' }), /valid currency/);
   assert.deepEqual(parseMappedCsv(header, 'debtors', mapping, check), []);
 });
+
+test('payment import rejects masked invoice references before showing a valid preview', () => {
+  assert.throws(() => parseCsv(template('payments') + 'P1,S1,Fictional,***,10', 'payments'), /letters or numbers/);
+  assert.equal(parseCsv(template('payments') + 'P1,S1,Fictional,INV-1,10', 'payments')[0].invoice, 'INV-1');
+});

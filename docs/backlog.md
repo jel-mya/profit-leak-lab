@@ -171,3 +171,9 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - The preview states whether currency codes were checked. Choosing no currency column explicitly leaves the single-currency assertion with the user; the app does not infer currency from symbols, amounts or filenames.
 - 125 tests pass, including mismatched rows, missing currency columns, metadata exclusion and worker forwarding. The emitted-worker smoke also checks rejection of mismatched currency.
 - Canonical GitHub delivery only; preview transfer approval remains pending.
+
+## Usable supplier invoice references — 8 September 2026
+
+- Payment imports now reject invoice references containing no letters or numbers before preview or calculation. Masked references such as `***` can no longer create misleading duplicate-payment flags.
+- Existing case/separator matching and international letters/digits remain supported; supplier identity and amount remain part of every match.
+- 128 automated tests passed, including import rejection and matching regressions. Live Supabase verification remains outstanding. Preview publishing remains pending the previously requested source-transfer approval.

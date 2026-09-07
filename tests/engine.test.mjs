@@ -74,3 +74,20 @@ test('fractional hours round only after valuing integer hundredths', () => {
 test('unsafe labour multiplication fails instead of silently losing precision', () => {
   assert.throws(() => run({ labour: [{ ...demo.labour[0], claimedHours: 100000, approvedHours: 0, rate: 1000000000 }] }), /safe calculation/);
 });
+
+test('punctuation-only invoice references fail before duplicate analysis', () => {
+  for (const invoice of ['***', '???', '- / # .', '💰']) {
+    const payments = [{ ...demo.payments[0], invoice }];
+    assert.throws(() => validateRows('payments', payments), /letters or numbers/);
+    assert.throws(() => run({ payments }), /letters or numbers/);
+  }
+});
+test('invoice matching preserves case and separator rules with international letters and digits', () => {
+  for (const [first, second] of [['inv-12/3', 'INV #12.3'], ['é-１２', 'É１２'], ['票-123', '票123']]) {
+    const payments = [
+      { ...demo.payments[0], invoice: first },
+      { ...demo.payments[0], id: 'P-extra', invoice: second },
+    ];
+    assert.equal(run({ payments }).duplicateExposure, money(demo.payments[0].amount));
+  }
+});

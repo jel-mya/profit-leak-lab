@@ -6,6 +6,11 @@ export const columns = {
   labour: ['id', 'jobId', 'person', 'claimedHours', 'approvedHours', 'rate'],
 };
 const cashFields = new Set(['revenue', 'materials', 'subcontractors', 'labour', 'other', 'outstanding', 'amount', 'rate']);
+function invoiceReference(value) {
+  const reference = value.toUpperCase().replace(/[\s\-/#.]/g, '');
+  if (!/[\p{L}\p{N}]/u.test(reference)) throw new Error('Invoice reference must contain letters or numbers.');
+  return reference;
+}
 export function dateValue(value) {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) throw new Error('Use dates in YYYY-MM-DD format.');
   const stamp = Date.parse(value + 'T00:00:00Z');
@@ -38,6 +43,7 @@ export function validateRows(section, rows) {
       }
     }
     if (section === 'debtors') dateValue(result.dueDate);
+    if (section === 'payments') invoiceReference(result.invoice);
     if (ids.has(result.id)) throw new Error(`Row ${index + 1}: duplicate record ID.`);
     ids.add(result.id);
     return result;
@@ -58,8 +64,7 @@ export function analyse(input, asOf, targetMargin = 25) {
   });
   const groups = new Map();
   for (const p of data.payments) {
-    const invoice = p.invoice.toUpperCase().replace(/[\s\-/#.]/g, '');
-    if (!invoice) throw new Error('Invoice reference must contain letters or numbers.');
+    const invoice = invoiceReference(p.invoice);
     const key = JSON.stringify([p.supplierId, invoice, p.amount]);
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(p);

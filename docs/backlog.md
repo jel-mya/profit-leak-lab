@@ -51,3 +51,10 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Added a private per-identity mapping and transaction lock. Matching retries reuse the existing business; changed retries return conflict. Replays cannot restore revoked ownership or join another business by name.
 - All 52 local tests pass, including six onboarding scenarios. No dependencies, frontend or deployed database changed.
 - Documented the future UI contract and live Auth, abuse-prevention and multi-connection verification gates in `docs/onboarding.md`.
+
+## Authenticated workspace state and adapter — 7 September 2026
+
+- Added a Supabase client adapter and in-memory workspace coordinator for verified identity, explicit tenant selection, bounded action reads and revision-checked saves.
+- Session/tenant changes invalidate late responses; access loss clears cached financial state. Conflict drafts survive until explicit reload and reconciliation; no automatic write retry occurs.
+- All 65 local tests pass, including 13 client lifecycle/adapter tests. No runtime dependency, deployed database or preview UI changed.
+- The new modules are not yet wired into the screens. Follow `docs/workspace-client.md` for SDK sign-in/sign-out integration, pagination, conflict UI and live verification requirements.

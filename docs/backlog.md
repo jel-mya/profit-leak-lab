@@ -89,3 +89,11 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Applying an import, clearing a session or restoring demo data resets pages. Smaller result sets clamp stale page requests safely.
 - 82 tests pass, including traversing all 10,000 supported records exactly once, final-page bounds, empty results and invalid paging input.
 - This bounds rendered table rows, not analysis/parsing CPU or all React element construction. Worker parsing and column mapping remain next import priorities. Browser interaction testing is not claimed.
+
+## Explicit CSV column mapping — 7 September 2026
+
+- Added a column-match step before preview for all four import types. Exact canonical names are preselected; other names require explicit choices. No vendor-specific schema or semantic guessing is claimed.
+- Mappings require every target exactly once and distinct existing source columns. Extra source columns are excluded from resulting records, with an excluded-column count before validation.
+- Existing amount/date/ID validation remains intact. Input inspection rejects duplicate/empty headers, more than 100 columns, more than 10,000 records and malformed row widths, including unused columns.
+- Raw text remains only in browser memory until mapping, cancellation or replacement; it is not uploaded or saved. Mapped previews retain the separate apply/cancel step.
+- 86 tests pass, including mapping ambiguity, unused-field exclusion, invalid values and inspection bounds. Browser interaction testing remains unperformed.

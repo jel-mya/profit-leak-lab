@@ -1,6 +1,5 @@
 import { analyse, columns, validateRows } from './engine.mjs';
-export function parseCsv(text, section) {
-  if (!columns[section]) throw new Error('Unknown import type.');
+export function inspectCsv(text) {
   if (new TextEncoder().encode(text).length > 2 * 1024 * 1024) throw new Error('CSV exceeds 2 MB.');
   text = text.replace(/^\uFEFF/, '');
   const rows = []; let row = [], field = '', quoted = false, closed = false;
@@ -22,11 +21,27 @@ export function parseCsv(text, section) {
   if (quoted) throw new Error('Unclosed CSV quote.');
   if (field || row.length || closed) line();
   const header = rows.shift()?.map(v => v.trim());
-  if (!header || new Set(header).size !== header.length || header.length !== columns[section].length || columns[section].some(k => !header.includes(k))) throw new Error(`Expected columns: ${columns[section].join(', ')}`);
-  const result = rows.map((r, i) => {
-    if (r.length !== header.length) throw new Error(`Row ${i + 1}: incorrect number of columns.`);
-    return Object.fromEntries(header.map((k, j) => [k, r[j].trim()]));
-  });
+  if (!header || header.some(h => !h) || new Set(header).size !== header.length) throw new Error('CSV headers must be non-empty and unique.');
+  if (header.length > 100) throw new Error('CSV exceeds 100 columns. Export only the fields needed for review.');
+  if (rows.length > 10000) throw new Error('CSV exceeds 10,000 records.');
+  rows.forEach((r, i) => { if (r.length !== header.length) throw new Error(`Row ${i + 1}: incorrect number of columns.`); });
+  return { header, rows };
+}
+export function parseCsv(text, section) {
+  if (!columns[section]) throw new Error('Unknown import type.');
+  const { header } = inspectCsv(text);
+  if (header.length !== columns[section].length || columns[section].some(k => !header.includes(k))) throw new Error(`Expected columns: ${columns[section].join(', ')}`);
+  return parseMappedCsv(text, section, Object.fromEntries(columns[section].map(k => [k, k])));
+}
+export function parseMappedCsv(text, section, mapping) {
+  if (!columns[section]) throw new Error('Unknown import type.');
+  const { header, rows } = inspectCsv(text);
+  const required = columns[section];
+  if (!mapping || Object.keys(mapping).length !== required.length || required.some(k => !Object.hasOwn(mapping, k) || !header.includes(mapping[k]))) throw new Error('Choose a source column for every required field.');
+  const sources = required.map(k => mapping[k]);
+  if (new Set(sources).size !== sources.length) throw new Error('Each source column can be used only once.');
+  const indexes = sources.map(k => header.indexOf(k));
+  const result = rows.map(r => Object.fromEntries(required.map((key, i) => [key, r[indexes[i]].trim()])));
   validateRows(section, result);
   return result;
 }

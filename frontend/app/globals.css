@@ -700,3 +700,5 @@ td, .signal, .coverage, .stat p, .stat span, .cloud-form label { font-size: 14px
 .table-paging p { color: var(--muted-foreground); margin-bottom: 12px; }
 .table-paging [data-slot='pagination-content'] { flex-wrap: wrap; gap: 8px; }
 .table-paging [data-slot='pagination-item'] span { padding: 0 8px; }
+
+.mapping-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin: 20px 0; }

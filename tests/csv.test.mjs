@@ -49,3 +49,29 @@ test('invalid preview fails without modifying any live records', async () => {
   assert.throws(() => applyCsvPreview(demo, { section: 'debtors', rows: [{ id: 'bad' }] }, false, '2026-09-07', 25));
   assert.deepEqual(demo, before);
 });
+
+test('explicit mapping accepts reordered export headers and discards unselected columns', async () => {
+  const { parseMappedCsv } = await import('../core/csv.mjs');
+  const text = 'Contact,Invoice number,Balance,Due,Unused\nSynthetic,D1,12.30,2026-09-01,not imported';
+  const rows = parseMappedCsv(text, 'debtors', { id: 'Invoice number', customer: 'Contact', outstanding: 'Balance', dueDate: 'Due' });
+  assert.deepEqual(rows, [{ id: 'D1', customer: 'Synthetic', dueDate: '2026-09-01', outstanding: '12.30' }]);
+  assert.equal(JSON.stringify(rows).includes('not imported'), false);
+});
+test('mapping rejects missing, reused and unknown source columns', async () => {
+  const { parseMappedCsv } = await import('../core/csv.mjs');
+  const text = template('debtors') + 'D1,Synthetic,2026-09-01,12';
+  const mapping = { id: 'id', customer: 'customer', dueDate: 'dueDate', outstanding: 'outstanding' };
+  for (const bad of [{ ...mapping, id: '' }, { ...mapping, id: 'customer' }, { ...mapping, id: 'missing' }, { ...mapping, extra: 'id' }, {}]) assert.throws(() => parseMappedCsv(text, 'debtors', bad));
+});
+test('mapped records retain date, amount and unique identifier validation', async () => {
+  const { parseMappedCsv } = await import('../core/csv.mjs');
+  const header = 'Number,Name,Due,Balance\n';
+  const mapping = { id: 'Number', customer: 'Name', dueDate: 'Due', outstanding: 'Balance' };
+  for (const row of ['D1,Synthetic,01/09/2026,12', 'D1,Synthetic,2026-09-01,$12', 'D1,Synthetic,2026-09-01,-12', 'D1,Synthetic,2026-09-01,12\nD1,Synthetic,2026-09-01,12']) assert.throws(() => parseMappedCsv(header + row, 'debtors', mapping));
+  assert.deepEqual(parseMappedCsv(header, 'debtors', mapping), []);
+});
+test('inspection rejects ambiguous headers, oversized row counts and malformed unused columns', async () => {
+  const { inspectCsv } = await import('../core/csv.mjs');
+  for (const csv of ['Name,Name\n1,2', 'Name, \n1,2', 'Name,Other\n1', Array.from({ length: 101 }, (_, i) => `C${i}`).join(','), 'Name\n' + 'row\n'.repeat(10001)]) assert.throws(() => inspectCsv(csv));
+  assert.deepEqual(inspectCsv('\uFEFFA,B\r\n"a,b",c'), { header: ['A', 'B'], rows: [['a,b', 'c']] });
+});

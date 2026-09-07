@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/select';
 import {
   analyse,
+  columns,
   controls,
   controlHealth,
   sections,
@@ -40,7 +41,12 @@ import {
 } from '@/components/ui/pagination';
 import { pageWindow } from '../../core/pagination.mjs';
 import { demo, demoDate } from '../../core/demo.mjs';
-import { applyCsvPreview, parseCsv, template } from '../../core/csv.mjs';
+import {
+  applyCsvPreview,
+  inspectCsv,
+  parseMappedCsv,
+  template,
+} from '../../core/csv.mjs';
 import { useReviewTool } from '@/lib/use-review-tool';
 
 type Data = Record<string, Record<string, string | number>[]>;
@@ -205,7 +211,32 @@ export default function Home() {
     section: string;
     rows: Record<string, string>[];
   } | null>(null);
+  const [source, setSource] = useState<{
+    text: string;
+    header: string[];
+    section: string;
+    count: number;
+  } | null>(null);
+  const [mapping, setMapping] = useState<Record<string, string>>({});
+  function prepareMappedPreview() {
+    if (!source) return;
+    try {
+      const rows = parseMappedCsv(source.text, source.section, mapping);
+      setPreview({ section: source.section, rows });
+      setSource(null);
+      setMapping({});
+      setMessage(
+        'Mapped records validated. Review the sample, then apply the import.',
+      );
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : 'Check the column mapping.',
+      );
+    }
+  }
   function cancelImport() {
+    setSource(null);
+    setMapping({});
     importGeneration.current++;
     setPreview(null);
     setBusy(false);
@@ -270,14 +301,30 @@ export default function Home() {
     const generation = ++importGeneration.current;
     const selectedSection = section;
     setPreview(null);
+    setSource(null);
+    setMapping({});
     setBusy(true);
     try {
       if (file.size > 2 * 1024 * 1024) throw new Error('CSV exceeds 2 MB.');
-      const rows = parseCsv(await file.text(), selectedSection);
+      const text = await file.text();
+      const inspected = inspectCsv(text);
       if (generation !== importGeneration.current) return;
-      setPreview({ section: selectedSection, rows });
+      setSource({
+        text,
+        header: inspected.header,
+        section: selectedSection,
+        count: inspected.rows.length,
+      });
+      setMapping(
+        Object.fromEntries(
+          columns[selectedSection as keyof typeof columns].map((key) => [
+            key,
+            inspected.header.includes(key) ? key : '',
+          ]),
+        ),
+      );
       setMessage(
-        'CSV checked. Review the preview, then apply it. Current records have not changed.',
+        'Match each required field to a column in your file. Current records have not changed.',
       );
     } catch (error) {
       if (generation === importGeneration.current)
@@ -857,6 +904,83 @@ export default function Home() {
                   Cancel file read
                 </Button>
               )}
+              {source && (
+                <section className="import-preview" aria-label="Column mapping">
+                  <h3>Match columns · {source.count} records</h3>
+                  <p>
+                    Choose the column that contains each required value. Exact
+                    template names are selected automatically; check them before
+                    continuing.
+                  </p>
+                  <p className="muted">
+                    Dates must already be YYYY-MM-DD and amounts plain decimal
+                    numbers. Column mapping does not convert values, currencies
+                    or tax bases.
+                  </p>
+                  <div className="mapping-grid">
+                    {columns[source.section as keyof typeof columns].map(
+                      (field) => (
+                        <label key={field}>
+                          {field}
+                          <Select
+                            value={mapping[field] || null}
+                            onValueChange={(value) => {
+                              if (value)
+                                setMapping((old) => ({
+                                  ...old,
+                                  [field]: value,
+                                }));
+                            }}
+                          >
+                            <SelectTrigger
+                              aria-label={`Source column for ${field}`}
+                            >
+                              <SelectValue placeholder="Choose source column" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {source.header.map((header) => (
+                                <SelectItem key={header} value={header}>
+                                  {header}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </label>
+                      ),
+                    )}
+                  </div>
+                  <p className="muted">
+                    {
+                      source.header.filter(
+                        (header) => !Object.values(mapping).includes(header),
+                      ).length
+                    }{' '}
+                    unselected columns will be excluded from the imported
+                    records.
+                  </p>
+                  <div className="import-actions">
+                    <Button
+                      onClick={prepareMappedPreview}
+                      disabled={columns[
+                        source.section as keyof typeof columns
+                      ].some((field) => !mapping[field])}
+                    >
+                      Validate mapping and preview
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        cancelImport();
+                        setMessage(
+                          'Import cancelled. Current records retained.',
+                        );
+                      }}
+                    >
+                      Cancel import
+                    </Button>
+                  </div>
+                </section>
+              )}
               {preview && (
                 <section className="import-preview" aria-label="CSV preview">
                   <h3>
@@ -924,7 +1048,7 @@ export default function Home() {
               )}
               <ul>
                 <li>
-                  Use the exact template headers, one currency and tax-exclusive
+                  Match your column headers, use one currency and tax-exclusive
                   job amounts.
                 </li>
                 <li>

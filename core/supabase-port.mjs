@@ -47,11 +47,12 @@ export function createSupabasePort(client) {
     createBusiness(name, currency) {
       return unwrap(client.rpc('create_business', { p_name: name, p_currency: currency }).single());
     },
-    createAction(businessId, draft) {
-      return unwrap(client.from('control_actions').insert({
-        business_id: businessId, title: draft.title, owner_label: draft.owner_label,
-        due_date: draft.due_date, status: draft.status, note: draft.note,
-      }).select('id,business_id,title,owner_label,due_date,status,note,revision').single());
+    createAction(businessId, draft, requestId) {
+      return unwrap(client.rpc('create_control_action', {
+        p_request_id: requestId, p_business_id: businessId,
+        p_title: draft.title, p_owner_label: draft.owner_label,
+        p_due_date: draft.due_date, p_status: draft.status, p_note: draft.note,
+      }).single());
     },
   };
 }

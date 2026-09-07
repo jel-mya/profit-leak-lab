@@ -6,11 +6,13 @@ The request key is scoped to the authenticated caller. Repeat the same key and e
 
 The private mapping retains the original editable payload to compare replays even after the action changes. It has no client grants and must not be exposed through the Data API. Its references deliberately prevent silent deletion of retry evidence; retention/account deletion requires a separately approved policy. Do not expire mappings until a supported retry lifetime and retention design exist.
 
-## Client integration still required
+## Client integration
 
-The current adapter still creates actions with a table insert. This migration alone does **not** make those existing requests retry-safe. Direct inserts remain under the existing RLS and restricted column grants for compatibility; they do not use the request mapping.
+The connected-workspace adapter now uses the RPC. The coordinator generates one UUID per intended creation and retains the original draft/key after an uncertain error. Retrying identical values reuses the key. A changed draft is blocked until the pending request is explicitly abandoned after checking saved actions. The UI offers retry-original, reload-saved-actions and deliberate discard controls; it does not retry automatically.
 
-Switch the adapter to this RPC in a subsequent client increment. Generate one random UUID per intended creation and retain it through network errors. Do not automatically generate a fresh key after an uncertain response. Preserve the submitted fields and require explicit review before changing an unresolved request. Clear the pending key after confirmed success or deliberate abandonment following a review of saved actions. Sign-out/reload must clear sensitive local state; if the key is then lost, require checking saved actions before retrying rather than promising cross-session deduplication. Never add raw drafts or tokens to local storage implicitly.
+Confirmed success clears the draft and key before refreshing the list, so a failed follow-up read cannot masquerade as an unsaved creation. Explicit database validation failures release the key. Uncertain failures and request conflicts retain it. Direct table inserts remain under the existing RLS/column grants for compatibility, but the app does not use them and they do not gain retry deduplication.
+
+Keys and drafts are memory-only. Sign-out, switching businesses or reloading can lose the pending key; users must check saved actions before creating again. There is no cross-session deduplication promise. The UI explains this limitation. No drafts or tokens are placed in local storage.
 
 ## Verification
 

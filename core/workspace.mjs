@@ -24,12 +24,12 @@ function draftFields(draft) {
 }
 export function createWorkspace(port) {
   let generation = 0;
-  let state = { phase: 'signedOut', userId: null, memberships: [], businessId: null, actions: [], hasMore: false, offset: 0, conflict: null, history: null, error: null };
+  let state = { phase: 'signedOut', userId: null, memberships: [], businessId: null, actions: [], hasMore: false, offset: 0, conflict: null, history: null, creation: null, error: null };
   const listeners = new Set();
   function publish(patch) { state = { ...state, ...patch }; for (const listener of listeners) listener(structuredClone(state)); }
   function clear(phase = 'signedOut', error = null) {
     generation++;
-    publish({ phase, userId: null, memberships: [], businessId: null, actions: [], hasMore: false, offset: 0, conflict: null, history: null, error });
+    publish({ phase, userId: null, memberships: [], businessId: null, actions: [], hasMore: false, offset: 0, conflict: null, history: null, creation: null, error });
   }
   function current(ticket) { if (ticket !== generation) throw new WorkspaceError('STALE_REQUEST'); }
   function code(error) { return error?.code ?? 'REQUEST_FAILED'; }
@@ -55,7 +55,7 @@ export function createWorkspace(port) {
       if (!Number.isSafeInteger(offset) || offset < 0) throw new WorkspaceError('INVALID_PAGE');
       if (!state.userId || !state.memberships.some(m => m.business_id === id)) throw new WorkspaceError('ACCESS_DENIED');
       const ticket = ++generation;
-      publish({ phase: 'loading', businessId: id, actions: [], hasMore: false, conflict: null, history: null, error: null });
+      publish({ phase: 'loading', creation: state.creation?.businessId === id ? state.creation : null, businessId: id, actions: [], hasMore: false, conflict: null, history: null, error: null });
       try {
         const result = await port.actions(id, offset); current(ticket);
         if (result.rows.some(a => a.business_id !== id)) throw new WorkspaceError('INVALID_RESPONSE');
@@ -135,23 +135,29 @@ export function createWorkspace(port) {
       publish({ phase: 'ready', actions: state.actions.map(a => a.id === latest.id ? latest : a) });
       return workspace.save(latest.id, mergedDraft);
     },
+    abandonCreation() {
+      if (state.phase !== 'ready') throw new WorkspaceError('NOT_READY');
+      publish({ creation: null, error: null });
+    },
     async create(draft) {
       if (state.phase !== 'ready') throw new WorkspaceError('NOT_READY');
       if (!state.memberships.some(m => m.business_id === state.businessId && ['owner', 'editor'].includes(m.role))) throw new WorkspaceError('ACCESS_DENIED');
       const values = draftFields(draft);
       const id = state.businessId;
+      if (state.creation && (state.creation.businessId !== id || JSON.stringify(state.creation.draft) !== JSON.stringify(values))) throw new WorkspaceError('CREATE_REVIEW_REQUIRED');
+      const attempt = state.creation ?? { businessId: id, requestId: crypto.randomUUID(), draft: values };
       const ticket = ++generation;
-      publish({ phase: 'saving', history: null, error: null });
+      publish({ phase: 'saving', creation: attempt, history: null, error: null });
       try {
-        const created = await port.createAction(id, values); current(ticket);
+        const created = await port.createAction(id, values, attempt.requestId); current(ticket);
         if (created.business_id !== id) throw new WorkspaceError('INVALID_RESPONSE');
-        // Return the created record without assuming it falls on the current page.
-        publish({ phase: 'ready' });
+        publish({ phase: 'ready', creation: null });
         return structuredClone(created);
       } catch (error) {
         if (ticket === generation) {
           if (accessLost(error)) clear('signedOut', 'ACCESS_LOST');
-          else publish({ phase: 'ready', error: code(error) });
+          else if (['23514', '23502', '22001', '22023', '22P02'].includes(code(error))) publish({ phase: 'ready', creation: null, error: code(error) });
+          else publish({ phase: 'ready', error: 'CREATE_UNCERTAIN' });
         }
         throw error;
       }

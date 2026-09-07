@@ -135,3 +135,10 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - 110 tests pass, including six new database scenarios. Actual simultaneous-connection and Supabase API behaviour remain unverified.
 - The existing client still uses direct inserts. Next: integrate request-key retention and explicit uncertain-result handling; the migration alone does not change the current UI's retry behaviour. See `docs/action-creation.md`.
 - No frontend change, live migration or preview deployment in this increment.
+
+## Creation retry client integration — 8 September 2026
+
+- The workspace adapter now creates through the idempotent RPC. Uncertain responses retain the original draft and request key; identical retries reuse it, while different drafts require explicit review/abandonment.
+- Added pending-request controls to retry original values, reload saved actions or deliberately discard after checking. A confirmed creation clears its draft before refreshing the list; failed reads report that the write succeeded.
+- 114 tests pass, including key reuse, payload-change blocking, explicit abandonment, validation failure cleanup, sign-out clearing and exact RPC payload forwarding.
+- Pending requests remain memory-only and are lost across sign-out/reload/business switching. Live Supabase migrations/API/concurrency and browser flows remain unverified; cloud configuration stays disabled.

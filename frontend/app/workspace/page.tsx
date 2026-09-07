@@ -29,6 +29,12 @@ const blank: Draft = {
   note: '',
 };
 const messages: Record<string, string> = {
+  CREATE_UNCERTAIN:
+    'The creation result is uncertain. Retry the original request or check saved actions before discarding it.',
+  CREATE_REVIEW_REQUIRED:
+    'A previous creation is still uncertain. Resolve that request before creating a different action.',
+  SAVED_REFRESH_FAILED:
+    'The action was saved, but the list could not refresh. Reload saved actions; do not create it again.',
   PT409: 'This record changed. Review the current version before saving again.',
   ACCESS_LOST:
     'Your access changed. Sign in again to refresh your memberships.',
@@ -188,6 +194,19 @@ export default function CloudWorkspace() {
     } finally {
       setBusy(false);
     }
+  }
+  async function createAndRefresh(values: Draft) {
+    const businessId = runtime!.workspace.snapshot().businessId!;
+    await runtime!.workspace.create(values);
+    // Acknowledged writes must clear the draft even if the subsequent read fails.
+    setDraft(blank);
+    setEditing(null);
+    try {
+      await runtime!.workspace.selectBusiness(businessId);
+    } catch {
+      throw { code: 'SAVED_REFRESH_FAILED' };
+    }
+    setMessage('Action saved.');
   }
   function edit(action: Action) {
     setEditing(action.id);
@@ -386,6 +405,62 @@ export default function CloudWorkspace() {
                 Switch business
               </Button>
             </div>
+            {state.creation && (
+              <section className="panel" aria-label="Uncertain action creation">
+                <h2>Check the pending action</h2>
+                <p>
+                  The server may already have saved this action. Retry sends the
+                  same original request, so it can return the existing action.
+                </p>
+                <p>
+                  <strong>{state.creation.draft.title}</strong> ·{' '}
+                  {state.creation.draft.status} ·{' '}
+                  {state.creation.draft.owner_label || 'Unassigned'} ·{' '}
+                  {state.creation.draft.due_date || 'No due date'}
+                </p>
+                <p>{state.creation.draft.note || 'No outcome note'}</p>
+                <p className="muted">
+                  Signing out, switching businesses or refreshing clears the
+                  pending request from this tab. Check saved actions before
+                  creating it again.
+                </p>
+                <div className="import-actions">
+                  <Button
+                    disabled={busy || state.phase !== 'ready'}
+                    onClick={() =>
+                      void perform(() =>
+                        createAndRefresh(state.creation!.draft),
+                      )
+                    }
+                  >
+                    Retry original request
+                  </Button>
+                  <Button
+                    variant="outline"
+                    disabled={busy || state.phase !== 'ready'}
+                    onClick={() =>
+                      void perform(() => ws!.selectBusiness(state.businessId!))
+                    }
+                  >
+                    Reload saved actions
+                  </Button>
+                  <Button
+                    variant="outline"
+                    disabled={busy || state.phase !== 'ready'}
+                    onClick={() => {
+                      ws!.abandonCreation();
+                      setDraft(blank);
+                      setEditing(null);
+                      setMessage(
+                        'Pending request discarded after review. Any saved action remains in the business.',
+                      );
+                    }}
+                  >
+                    I checked saved actions; discard request
+                  </Button>
+                </div>
+              </section>
+            )}
             <div className="panel-grid">
               <section className="panel">
                 <h2>Saved actions</h2>
@@ -641,8 +716,7 @@ export default function CloudWorkspace() {
                           await ws!.resolveConflict(draft);
                         else if (editing) await ws!.save(editing, draft);
                         else {
-                          await ws!.create(draft);
-                          await ws!.selectBusiness(state.businessId!);
+                          await createAndRefresh(draft);
                         }
                         setEditing(null);
                         setDraft(blank);
@@ -716,6 +790,7 @@ export default function CloudWorkspace() {
                       disabled={
                         busy ||
                         state.phase === 'saving' ||
+                        (!editing && !!state.creation) ||
                         (state.phase === 'conflict' && !state.conflict?.current)
                       }
                     >

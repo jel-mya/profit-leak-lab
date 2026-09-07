@@ -295,3 +295,51 @@ test('blank closure outcomes are rejected before any workspace write', async () 
   await workspace.save(record.id, { ...draft, status: 'Resolved', note: 'Synthetic outcome recorded.' });
   assert.equal(workspace.snapshot().actions[0].status, 'Resolved');
 });
+
+test('uncertain creation retries reuse the original request key and clear it on success', async () => {
+  const calls = [];
+  const { workspace } = setup({ createAction: async (businessId, values, requestId) => {
+    calls.push({ businessId, values, requestId });
+    if (calls.length === 1) throw fail('NETWORK');
+    return record;
+  }});
+  await ready(workspace);
+  await assert.rejects(workspace.create(draft));
+  assert.equal(workspace.snapshot().error, 'CREATE_UNCERTAIN');
+  const original = workspace.snapshot().creation;
+  await workspace.selectBusiness('a');
+  assert.equal(workspace.snapshot().creation.requestId, original.requestId);
+  await workspace.create(draft);
+  assert.equal(calls[0].requestId, calls[1].requestId);
+  assert.match(calls[0].requestId, /^[0-9a-f-]{36}$/);
+  assert.equal(workspace.snapshot().creation, null);
+});
+test('changed uncertain drafts cannot create another action without explicit abandonment', async () => {
+  const keys = [];
+  const { workspace } = setup({ createAction: async (id, values, key) => { keys.push(key); throw fail('NETWORK'); } });
+  await ready(workspace);
+  await assert.rejects(workspace.create(draft));
+  await assert.rejects(workspace.create({ ...draft, title: 'Different' }), e => e.code === 'CREATE_REVIEW_REQUIRED');
+  assert.equal(keys.length, 1);
+  workspace.abandonCreation();
+  await assert.rejects(workspace.create({ ...draft, title: 'Different' }));
+  assert.notEqual(keys[0], keys[1]);
+});
+test('definite validation failures release the creation key while sign-out clears uncertain state', async () => {
+  const { workspace } = setup({ createAction: async () => { throw fail('23514'); } });
+  await ready(workspace);
+  await assert.rejects(workspace.create(draft));
+  assert.equal(workspace.snapshot().creation, null);
+  const pending = setup({ createAction: async () => { throw fail('NETWORK'); } }).workspace;
+  await ready(pending); await assert.rejects(pending.create(draft));
+  pending.disconnect();
+  assert.equal(pending.snapshot().creation, null);
+  assert.equal(pending.snapshot().actions.length, 0);
+});
+test('creation adapter uses the retry RPC and forwards only the editable payload', async () => {
+  let captured;
+  const port = createSupabasePort({ rpc: (name, args) => { captured = { name, args }; return { single: async () => ({ data: record, error: null }) }; } });
+  await port.createAction('a', { ...draft, created_by: 'spoof', revision: 77 }, 'synthetic-key');
+  assert.equal(captured.name, 'create_control_action');
+  assert.deepEqual(captured.args, { p_request_id: 'synthetic-key', p_business_id: 'a', p_title: draft.title, p_owner_label: '', p_due_date: null, p_status: 'Open', p_note: '' });
+});

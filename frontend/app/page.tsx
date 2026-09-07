@@ -1,5 +1,5 @@
 'use client';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   ArrowUpRight,
@@ -47,13 +47,9 @@ import {
 } from '../../core/action-source.mjs';
 import { requireActionOutcome } from '../../core/action-outcome.mjs';
 import { reviewCurrency } from '../../core/review-currency.mjs';
+import { createCsvProcessor, type CsvProcessor } from '../../core/csv-task.mjs';
 import { demo, demoDate } from '../../core/demo.mjs';
-import {
-  applyCsvPreview,
-  inspectCsv,
-  parseMappedCsv,
-  template,
-} from '../../core/csv.mjs';
+import { applyCsvPreview, template } from '../../core/csv.mjs';
 import { useReviewTool } from '@/lib/use-review-tool';
 
 type Data = Record<string, Record<string, string | number>[]>;
@@ -221,6 +217,23 @@ export default function Home() {
   const [title, setTitle] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
   const importGeneration = useRef(0);
+  const processorRef = useRef<CsvProcessor | null>(null);
+  function processor() {
+    processorRef.current ??= createCsvProcessor(
+      () =>
+        new Worker(new URL('../lib/csv.worker.ts', import.meta.url), {
+          type: 'module',
+        }),
+    );
+    return processorRef.current;
+  }
+  useEffect(
+    () => () => {
+      importGeneration.current++;
+      processorRef.current?.cancel();
+    },
+    [],
+  );
   const [preview, setPreview] = useState<{
     section: string;
     rows: Record<string, string>[];
@@ -232,10 +245,18 @@ export default function Home() {
     count: number;
   } | null>(null);
   const [mapping, setMapping] = useState<Record<string, string>>({});
-  function prepareMappedPreview() {
+  async function prepareMappedPreview() {
     if (!source) return;
+    const generation = ++importGeneration.current;
+    setBusy(true);
     try {
-      const rows = parseMappedCsv(source.text, source.section, mapping);
+      const { rows } = await processor().run({
+        type: 'map',
+        text: source.text,
+        section: source.section,
+        mapping,
+      });
+      if (generation !== importGeneration.current) return;
       setPreview({ section: source.section, rows });
       setSource(null);
       setMapping({});
@@ -243,15 +264,19 @@ export default function Home() {
         'Mapped records validated. Review the sample, then apply the import.',
       );
     } catch (error) {
-      setMessage(
-        error instanceof Error ? error.message : 'Check the column mapping.',
-      );
+      if (generation === importGeneration.current)
+        setMessage(
+          error instanceof Error ? error.message : 'Check the column mapping.',
+        );
+    } finally {
+      if (generation === importGeneration.current) setBusy(false);
     }
   }
   function cancelImport() {
     setSource(null);
     setMapping({});
     importGeneration.current++;
+    processorRef.current?.cancel();
     setPreview(null);
     setBusy(false);
     if (fileRef.current) fileRef.current.value = '';
@@ -339,14 +364,13 @@ export default function Home() {
     setBusy(true);
     try {
       if (file.size > 2 * 1024 * 1024) throw new Error('CSV exceeds 2 MB.');
-      const text = await file.text();
-      const inspected = inspectCsv(text);
+      const inspected = await processor().run({ type: 'inspect', file });
       if (generation !== importGeneration.current) return;
       setSource({
-        text,
+        text: inspected.text,
         header: inspected.header,
         section: selectedSection,
-        count: inspected.rows.length,
+        count: inspected.count,
       });
       setMapping(
         Object.fromEntries(
@@ -1065,7 +1089,7 @@ export default function Home() {
               </div>
               {busy && (
                 <Button variant="outline" onClick={cancelImport}>
-                  Cancel file read
+                  Cancel CSV processing
                 </Button>
               )}
               {source && (
@@ -1087,6 +1111,7 @@ export default function Home() {
                         <label key={field}>
                           {field}
                           <Select
+                            disabled={busy}
                             value={mapping[field] || null}
                             onValueChange={(value) => {
                               if (value)
@@ -1124,10 +1149,13 @@ export default function Home() {
                   </p>
                   <div className="import-actions">
                     <Button
-                      onClick={prepareMappedPreview}
-                      disabled={columns[
-                        source.section as keyof typeof columns
-                      ].some((field) => !mapping[field])}
+                      onClick={() => void prepareMappedPreview()}
+                      disabled={
+                        busy ||
+                        columns[source.section as keyof typeof columns].some(
+                          (field) => !mapping[field],
+                        )
+                      }
                     >
                       Validate mapping and preview
                     </Button>

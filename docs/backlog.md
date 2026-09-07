@@ -156,3 +156,11 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Pending file reads, mappings and previews also retain their currency context; cancel the import before switching. The UI explains the clear-session workflow without silently discarding data.
 - 119 tests pass, covering loaded imports, pending previews and supported empty-session choices. This does not detect mixed currencies inside an export; users must still supply a consistent currency/tax basis.
 - Preview publication remains awaiting explicit source-transfer approval; this increment is delivered to canonical GitHub only.
+
+## Cancellable CSV worker — 8 September 2026
+
+- CSV file reading/inspection and mapped-record parsing now run in a module worker. The UI can terminate pending work when cancelling, replacing a task, changing import type, clearing the session or unmounting.
+- Cancelled promises are rejected and late responses ignored; success/error also terminates the worker. Existing size/row/value validation is reused. No server upload or browser storage was added.
+- 123 tests pass, including worker-task bounds, cancellation/replacement and error cleanup. Production build emitted the worker; a Node worker shim executed that actual bundle successfully for inspection, mapping and errors. CI now runs this smoke check after building.
+- This is not browser interaction verification. Final apply/review calculations and transfer/copy overhead remain on the main thread; no complete performance guarantee is claimed.
+- Canonical GitHub delivery only while preview transfer approval remains pending.

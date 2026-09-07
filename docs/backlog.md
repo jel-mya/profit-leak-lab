@@ -127,3 +127,11 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Added a database CHECK constraint for new inserts/updates. It is NOT VALID so legacy closed rows remain untouched; editing those rows requires an outcome or reopening. No history or explanatory evidence is fabricated during migration.
 - 104 tests pass, including blank closure rejection before client writes, SQL rollback without revision/history changes, valid closure history and legacy migration preservation.
 - Live migration execution remains outstanding. Notes record the user's explanation; their presence does not verify the explanation or prove a financial recovery.
+
+## Retry-safe action creation database contract — 8 September 2026
+
+- Added an authenticated creation RPC with per-caller request UUIDs, transaction locking, membership rechecks and private original-payload mapping. Matching retries return the existing action without another event; changed requests conflict.
+- Replays preserve later action edits and deny revoked/viewer/foreign access. Private mappings have no client grants and retain referential history.
+- 110 tests pass, including six new database scenarios. Actual simultaneous-connection and Supabase API behaviour remain unverified.
+- The existing client still uses direct inserts. Next: integrate request-key retention and explicit uncertain-result handling; the migration alone does not change the current UI's retry behaviour. See `docs/action-creation.md`.
+- No frontend change, live migration or preview deployment in this increment.

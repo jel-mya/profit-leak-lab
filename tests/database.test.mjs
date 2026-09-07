@@ -286,4 +286,66 @@ test('PostgreSQL enforces the tenant security contract', async t => {
       assert.equal((await db.query('select count(*)::int as count from public.action_events where action_id=$1', [actionA])).rows[0].count, before);
     } finally { await db.exec('rollback'); }
   });
+  const requestId = '30000000-0000-4000-8000-000000000001';
+  const createAction = (key = requestId, business = businessA, title = 'Synthetic retry') =>
+    db.query('select * from public.create_control_action($1,$2,$3,$4,null,$5,$6)', [key, business, title, '', 'Open', '']);
+  await t.test('matching creation retries return one action with one created event', async () => {
+    await as(editor, async () => {
+      const first = (await createAction()).rows[0];
+      const retry = (await createAction()).rows[0];
+      assert.equal(first.id, retry.id);
+      assert.equal(first.created_by, editor);
+      assert.equal(retry.revision, 1);
+      assert.equal((await db.query('select count(*)::int as count from public.action_events where action_id=$1', [first.id])).rows[0].count, 1);
+      assert.equal((await db.query("select count(*)::int as count from public.control_actions where title='Synthetic retry'")).rows[0].count, 1);
+    });
+  });
+  await t.test('creation replay returns later edits without overwriting them', async () => {
+    await as(editor, async () => {
+      const first = (await createAction()).rows[0];
+      await save(first.id, 1, 'Later reviewed title');
+      const retry = (await createAction()).rows[0];
+      assert.equal(retry.id, first.id);
+      assert.equal(retry.title, 'Later reviewed title');
+      assert.equal(retry.revision, 2);
+      assert.equal((await db.query('select count(*)::int as count from public.action_events where action_id=$1', [first.id])).rows[0].count, 2);
+    });
+  });
+  await t.test('changed creation payload conflicts and missing keys fail', async () => {
+    await assert.rejects(as(editor, async () => {
+      await createAction();
+      await createAction(requestId, businessA, 'Changed draft');
+    }), e => e.code === 'PT409');
+    await assert.rejects(as(editor, () => createAction(null)), e => e.code === '22023');
+  });
+  await t.test('creation RPC denies viewers, anonymous and foreign tenant callers', async () => {
+    await denied(as(viewer, () => createAction()));
+    await denied(as(editor, () => createAction(requestId, businessB)));
+    await denied(as(null, () => createAction(), 'anon'));
+    await denied(as(editor, () => db.query('select * from private.action_creation_requests')));
+  });
+  await t.test('identical keys from different authenticated callers do not share actions', async () => {
+    await db.exec('begin');
+    try {
+      await db.query("select set_config('request.jwt.claim.sub',$1,true)", [owner]);
+      await db.exec('set local role authenticated');
+      const first = (await createAction()).rows[0];
+      await db.query("select set_config('request.jwt.claim.sub',$1,true)", [editor]);
+      const second = (await createAction()).rows[0];
+      assert.notEqual(first.id, second.id);
+      assert.equal(second.created_by, editor);
+    } finally { await db.exec('rollback'); }
+  });
+  await t.test('revoked membership cannot replay a successful creation', async () => {
+    await db.exec('begin');
+    try {
+      await db.query("select set_config('request.jwt.claim.sub',$1,true)", [editor]);
+      await db.exec('set local role authenticated');
+      await createAction();
+      await db.exec('reset role');
+      await db.query('delete from public.memberships where business_id=$1 and user_id=$2', [businessA, editor]);
+      await db.exec('set local role authenticated');
+      await denied(createAction());
+    } finally { await db.exec('rollback'); }
+  });
 });

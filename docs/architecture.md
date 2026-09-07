@@ -39,3 +39,5 @@ Before storing real customer financial data: execute the migration and two-tenan
 Local tests demonstrate stale-version rejection, not simultaneous multi-connection load behaviour. Verify locking, HTTP conflict mapping and revoked-session access against the real Supabase API before release.
 
 Never commit exports, credentials, customer records or database backups. Keep demo data fictional. Dependencies are locked; assess audit results instead of applying forced major upgrades. Security headers must be applied to Worker HTML responses as well as static files; Cloudflare `_headers` alone does not protect Worker-generated HTML. [Cloudflare header guidance](https://developers.cloudflare.com/pages/configuration/headers/).
+
+The outcome migration (202609080001) requires nonblank notes on future resolved/dismissed action writes. It deliberately preserves existing rows using a NOT VALID constraint. Review legacy closed records through normal authorised updates, then validate the constraint in an approved database maintenance step; never invent outcomes or rewrite history merely to pass validation.

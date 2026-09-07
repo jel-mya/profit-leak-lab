@@ -45,6 +45,7 @@ import {
   sourceReviewStatus,
   type ActionSource,
 } from '../../core/action-source.mjs';
+import { requireActionOutcome } from '../../core/action-outcome.mjs';
 import { demo, demoDate } from '../../core/demo.mjs';
 import {
   applyCsvPreview,
@@ -301,7 +302,21 @@ export default function Home() {
     setTab('actions');
   }
   function updateAction(id: string, patch: Partial<Action>) {
-    setActions((old) => old.map((a) => (a.id === id ? { ...a, ...patch } : a)));
+    const current = actions.find((a) => a.id === id);
+    if (!current) return;
+    const next = { ...current, ...patch };
+    try {
+      requireActionOutcome(next.status, next.note);
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : 'Add an outcome before closing this action.',
+      );
+      return;
+    }
+    setActions((old) => old.map((a) => (a.id === id ? next : a)));
+    setMessage('Action updated.');
   }
   function download(content: string, name: string) {
     const url = URL.createObjectURL(
@@ -858,8 +873,9 @@ export default function Home() {
                 <div>
                   <h2>Action tracking</h2>
                   <p className="muted">
-                    Session only. Download your action record before closing or
-                    refreshing.
+                    Add an evidence / outcome note before resolving or
+                    dismissing. Session only: download your action record before
+                    closing or refreshing.
                   </p>
                 </div>
                 <Button

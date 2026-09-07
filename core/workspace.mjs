@@ -1,5 +1,6 @@
 // In-memory coordinator for the opt-in authenticated UI. No tokens, browser
 // storage, imports or automatic conflict retries belong in this state.
+import { requireActionOutcome } from './action-outcome.mjs';
 import { dateValue } from './engine.mjs';
 export class WorkspaceError extends Error {
   constructor(code) { super(code); this.name = 'WorkspaceError'; this.code = code; }
@@ -18,6 +19,7 @@ function draftFields(draft) {
   if (values.due_date !== null) {
     try { dateValue(values.due_date); } catch { throw new WorkspaceError('INVALID_DRAFT'); }
   }
+  try { requireActionOutcome(values.status, values.note); } catch { throw new WorkspaceError('OUTCOME_REQUIRED'); }
   return values;
 }
 export function createWorkspace(port) {

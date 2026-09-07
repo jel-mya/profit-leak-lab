@@ -120,3 +120,10 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Actions link back to the source section. Source reimports and relevant settings changes are labelled for review again without changing action status, original amounts or totals.
 - 100 tests pass, including source identity stability, immutable captured context, reimport/settings flags and invalid financial context.
 - These references are session-only and do not store raw source rows or make recovery claims. Same-ID reimports are conservatively flagged even if values match. Persistent finding versions, evidence-backed closure and reconciliation remain unfinished; no automatic resolution is inferred from missing records.
+
+## Outcome required for action closure — 8 September 2026
+
+- Session actions and connected-workspace drafts now require a nonblank evidence/outcome note before resolving or dismissing. Reopening permits further investigation; closure does not alter investigation totals or claim recovery.
+- Added a database CHECK constraint for new inserts/updates. It is NOT VALID so legacy closed rows remain untouched; editing those rows requires an outcome or reopening. No history or explanatory evidence is fabricated during migration.
+- 104 tests pass, including blank closure rejection before client writes, SQL rollback without revision/history changes, valid closure history and legacy migration preservation.
+- Live migration execution remains outstanding. Notes record the user's explanation; their presence does not verify the explanation or prove a financial recovery.

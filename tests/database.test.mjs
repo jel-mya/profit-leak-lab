@@ -255,4 +255,35 @@ test('PostgreSQL enforces the tenant security contract', async t => {
       await assert.rejects(db.query("select public.create_business('Synthetic starter','AUD')"), e => e.code === '42501');
     } finally { await db.exec('rollback'); }
   });
+  await t.test('blank closure is rejected atomically and valid closure retains history', async () => {
+    for (const status of ['Resolved', 'Dismissed']) {
+      for (const note of ['', ' ', String.fromCharCode(9, 10)]) {
+        await assert.rejects(as(editor, () => db.query('select * from public.update_control_action($1,1,$2,$3,null,$4,$5)', [actionA, 'Review', '', status, note])), e => e.code === '23514');
+      }
+      await as(editor, async () => {
+        const result = await save(actionA, 1, 'Reviewed', status);
+        assert.equal(result.rows[0].revision, 2);
+        assert.equal((await db.query('select count(*)::int as count from public.action_events where action_id=$1', [actionA])).rows[0].count, 2);
+      });
+    }
+    await as(owner, async () => {
+      const result = await db.query('select revision,status from public.control_actions where id=$1', [actionA]);
+      assert.equal(result.rows[0].revision, 1);
+      assert.equal(result.rows[0].status, 'Open');
+      assert.equal((await db.query('select count(*)::int as count from public.action_events where action_id=$1', [actionA])).rows[0].count, 1);
+    });
+    await assert.rejects(as(editor, () => db.query("insert into public.control_actions(business_id,title,status,note) values ($1,'Synthetic','Resolved','')", [businessA])), e => e.code === '23514');
+  });
+  await t.test('outcome migration preserves legacy closed rows without inventing evidence or history', async () => {
+    await db.exec('begin');
+    try {
+      await db.exec('alter table public.control_actions drop constraint control_actions_closed_outcome');
+      await db.query("update public.control_actions set status='Resolved',note='' where id=$1", [actionA]);
+      const before = (await db.query('select count(*)::int as count from public.action_events where action_id=$1', [actionA])).rows[0].count;
+      await db.exec(await readFile(new URL('202609080001_action_outcome.sql', directory), 'utf8'));
+      const legacy = (await db.query('select status,note from public.control_actions where id=$1', [actionA])).rows[0];
+      assert.deepEqual(legacy, { status: 'Resolved', note: '' });
+      assert.equal((await db.query('select count(*)::int as count from public.action_events where action_id=$1', [actionA])).rows[0].count, before);
+    } finally { await db.exec('rollback'); }
+  });
 });

@@ -284,3 +284,14 @@ test('history adapter filters tenant and action, orders revisions and uses a bou
   assert.ok(calls.some(c => c[0] === 'order' && c[1] === 'revision' && c[2].ascending === false));
   await assert.rejects(port.history('a', record.id, -1), e => e.code === 'INVALID_PAGE');
 });
+
+test('blank closure outcomes are rejected before any workspace write', async () => {
+  const { workspace, calls } = setup(); await ready(workspace);
+  for (const status of ['Resolved', 'Dismissed']) {
+    await assert.rejects(workspace.save(record.id, { ...draft, status, note: ' \t' }), e => e.code === 'OUTCOME_REQUIRED');
+  }
+  assert.equal(calls.length, 0);
+  assert.equal(workspace.snapshot().phase, 'ready');
+  await workspace.save(record.id, { ...draft, status: 'Resolved', note: 'Synthetic outcome recorded.' });
+  assert.equal(workspace.snapshot().actions[0].status, 'Resolved');
+});

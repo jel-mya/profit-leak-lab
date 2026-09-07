@@ -34,6 +34,8 @@ const messages: Record<string, string> = {
     'Your access changed. Sign in again to refresh your memberships.',
   VERIFIED_SIGN_IN_REQUIRED:
     'Use a verified, non-anonymous account for this pilot.',
+  OUTCOME_REQUIRED:
+    'Add an evidence / outcome note before resolving or dismissing. Reopen the action before removing its outcome.',
   INVALID_DRAFT: 'Check the action title, date and required fields.',
   ACCESS_DENIED: 'Your membership does not allow this action.',
 };
@@ -700,7 +702,7 @@ export default function CloudWorkspace() {
                       />
                     </label>
                     <label>
-                      Evidence / outcome
+                      Evidence / outcome (required to resolve or dismiss)
                       <Input
                         maxLength={1000}
                         value={draft.note}

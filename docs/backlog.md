@@ -104,3 +104,11 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Reads filter business and action and page 50 events at a time using descending revision cursors. Session/tenant changes and writes invalidate cached history and late responses.
 - 91 tests pass, including viewer reads, unloaded-action rejection, foreign-tenant response rejection, late sign-out/switch/save responses and bounded adapter query construction.
 - The viewer remains behind the existing disabled-by-default cloud configuration gate. No Supabase project was connected or database migration applied; live integration remains a release gate.
+
+## Executable live-read verification preparation — 7 September 2026
+
+- Added opt-in `npm run test:live:reads` using the installed official Supabase SDK, verified synthetic users and positive fixtures for two tenants plus a viewer.
+- Verifies membership/role scope, own-record visibility, known foreign-ID filtering and anonymous read denial. Makes no financial writes; temporary Auth sessions are signed out with bounded requests.
+- Added local tests demonstrating detection of leaked rows, missing positive fixtures, role drift, duplicate identities and broken endpoints. All 96 tests pass.
+- Verified the CLI refuses to run without explicit synthetic-project configuration (nonzero exit, no network request). No real Supabase execution occurred. See `docs/live-supabase-checks.md` for setup and remaining write/concurrency gates.
+- No frontend change or preview deployment is required for this verification tooling increment.

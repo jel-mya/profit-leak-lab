@@ -36,4 +36,6 @@ Cloudflare-compatible Worker build: deploy `frontend/dist/server/wrangler.json` 
 
 Supabase SQL is in `supabase/migrations/`. It supplies tenant isolation and least-privilege action tables; it does not create an account or connect the application. See [workspace configuration](docs/workspace-client.md) before enabling the pilot. Copy `.env.example` only to an ignored environment file. Never add a Supabase service-role key to frontend environment variables.
 
+Prepare actual API verification with the [live Supabase checks](docs/live-supabase-checks.md).
+
 Read [strategy](config.md), [architecture/security](docs/architecture.md) and [delivery backlog](docs/backlog.md). Production customer-data storage is gated on live RLS verification, authentication, audit history and operational/privacy controls.

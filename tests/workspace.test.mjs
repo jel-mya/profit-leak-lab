@@ -159,3 +159,69 @@ test('network failure while reloading a conflict retains the draft', async () =>
   assert.equal(workspace.snapshot().phase, 'conflict');
   assert.deepEqual(workspace.snapshot().conflict.draft, draft);
 });
+
+test('expired or denied access during reads and onboarding clears identity and memberships', async () => {
+  for (const code of ['42501', 'PGRST301', 'PGRST302']) {
+    for (const operation of ['read', 'onboard']) {
+      const { workspace } = setup({
+        actions: async () => { throw fail(code); },
+        createBusiness: async () => { throw fail(code); },
+      });
+      await workspace.connect();
+      await assert.rejects(operation === 'read' ? workspace.selectBusiness('a') : workspace.onboard('Synthetic', 'AUD'));
+      const state = workspace.snapshot();
+      assert.equal(state.phase, 'signedOut');
+      assert.equal(state.error, 'ACCESS_LOST');
+      assert.equal(state.userId, null);
+      assert.deepEqual(state.memberships, []);
+      assert.deepEqual(state.actions, []);
+      assert.equal(state.businessId, null);
+      assert.equal(state.offset, 0);
+    }
+  }
+});
+test('network failure during a page load clears records but permits explicit business retry', async () => {
+  let failing = false;
+  const { workspace } = setup({ actions: async () => {
+    if (failing) throw fail('NETWORK');
+    return { rows: [record], hasMore: true };
+  }});
+  await ready(workspace);
+  await workspace.selectBusiness('a', 100);
+  failing = true;
+  await assert.rejects(workspace.selectBusiness('a', 200));
+  const state = workspace.snapshot();
+  assert.equal(state.phase, 'chooseBusiness');
+  assert.equal(state.userId, user.id);
+  assert.deepEqual(state.actions, []);
+  assert.equal(state.offset, 0);
+  assert.equal(state.hasMore, false);
+  failing = false;
+  await workspace.selectBusiness('a');
+  assert.equal(workspace.snapshot().phase, 'ready');
+});
+test('foreign write responses invalidate all cached access rather than retaining old actions', async () => {
+  for (const operation of ['save', 'create']) {
+    const { workspace } = setup({
+      saveAction: async () => ({ ...record, business_id: 'foreign' }),
+      createAction: async () => ({ ...record, business_id: 'foreign' }),
+    });
+    await ready(workspace);
+    await assert.rejects(operation === 'save' ? workspace.save(record.id, draft) : workspace.create(draft), e => e.code === 'INVALID_RESPONSE');
+    assert.equal(workspace.snapshot().phase, 'signedOut');
+    assert.deepEqual(workspace.snapshot().actions, []);
+    assert.deepEqual(workspace.snapshot().memberships, []);
+  }
+});
+test('late denied read cannot clear a newer authorised business selection', async () => {
+  let rejectRead;
+  const pending = new Promise((resolve, reject) => { rejectRead = reject; });
+  const { workspace } = setup({ actions: id => id === 'a' ? pending : Promise.resolve({ rows: [], hasMore: false }) });
+  await workspace.connect();
+  const reading = workspace.selectBusiness('a');
+  await workspace.selectBusiness('b');
+  rejectRead(fail('PGRST301'));
+  await assert.rejects(reading);
+  assert.equal(workspace.snapshot().phase, 'ready');
+  assert.equal(workspace.snapshot().businessId, 'b');
+});

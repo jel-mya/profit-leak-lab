@@ -1,4 +1,4 @@
-// In-memory coordinator for the future authenticated UI. No tokens, browser
+// In-memory coordinator for the opt-in authenticated UI. No tokens, browser
 // storage, imports or automatic conflict retries belong in this state.
 import { dateValue } from './engine.mjs';
 export class WorkspaceError extends Error {
@@ -31,6 +31,7 @@ export function createWorkspace(port) {
   }
   function current(ticket) { if (ticket !== generation) throw new WorkspaceError('STALE_REQUEST'); }
   function code(error) { return error?.code ?? 'REQUEST_FAILED'; }
+  function accessLost(error) { return ['42501', 'PGRST301', 'PGRST302', 'INVALID_RESPONSE'].includes(code(error)); }
   const workspace = {
     snapshot: () => structuredClone(state),
     subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },
@@ -58,7 +59,10 @@ export function createWorkspace(port) {
         if (result.rows.some(a => a.business_id !== id)) throw new WorkspaceError('INVALID_RESPONSE');
         publish({ phase: 'ready', actions: result.rows, hasMore: result.hasMore, offset });
       } catch (error) {
-        if (ticket === generation) publish({ phase: 'chooseBusiness', businessId: null, actions: [], hasMore: false, error: code(error) });
+        if (ticket === generation) {
+          if (accessLost(error)) clear('signedOut', 'ACCESS_LOST');
+          else publish({ phase: 'chooseBusiness', businessId: null, actions: [], hasMore: false, offset: 0, error: code(error) });
+        }
         throw error;
       }
     },
@@ -80,7 +84,7 @@ export function createWorkspace(port) {
       } catch (error) {
         if (ticket === generation) {
           if (code(error) === 'PT409') publish({ phase: 'conflict', conflict: { id, revision: original.revision, draft: values }, error: 'PT409' });
-          else if (['42501', 'PGRST301', 'PGRST302'].includes(code(error))) clear('signedOut', 'ACCESS_LOST');
+          else if (accessLost(error)) clear('signedOut', 'ACCESS_LOST');
           else publish({ phase: 'ready', error: code(error) });
         }
         throw error;
@@ -96,7 +100,7 @@ export function createWorkspace(port) {
         publish({ conflict: { ...conflict, current: latest } });
       } catch (error) {
         if (ticket === generation) {
-          if (['42501', 'PGRST301', 'PGRST302', 'PGRST116', 'INVALID_RESPONSE'].includes(code(error))) clear('signedOut', 'ACCESS_LOST');
+          if (accessLost(error) || code(error) === 'PGRST116') clear('signedOut', 'ACCESS_LOST');
           else publish({ error: code(error) });
         }
         throw error;
@@ -124,7 +128,7 @@ export function createWorkspace(port) {
         return structuredClone(created);
       } catch (error) {
         if (ticket === generation) {
-          if (['42501', 'PGRST301', 'PGRST302'].includes(code(error))) clear('signedOut', 'ACCESS_LOST');
+          if (accessLost(error)) clear('signedOut', 'ACCESS_LOST');
           else publish({ phase: 'ready', error: code(error) });
         }
         throw error;
@@ -139,7 +143,10 @@ export function createWorkspace(port) {
         await workspace.connect();
         return business;
       } catch (error) {
-        if (ticket === generation) publish({ phase: 'chooseBusiness', error: code(error) });
+        if (ticket === generation) {
+          if (accessLost(error)) clear('signedOut', 'ACCESS_LOST');
+          else publish({ phase: 'chooseBusiness', error: code(error) });
+        }
         throw error;
       }
     },

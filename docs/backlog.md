@@ -8,7 +8,7 @@
 - Tenant/RLS SQL foundation, unit tests and CI.
 
 ## Highest-value next work
-1. Persist actions safely: local SQL isolation, revision-checked updates, client-immutable history and starter-business onboarding now pass tests. Add Supabase Auth and UI onboarding/conflict handling. Repeat isolation/concurrency cases through the actual Supabase API before collecting real customer data.
+1. Persist actions safely: local SQL isolation, revision-checked updates, client-immutable history and starter-business onboarding now pass tests. Opt-in Supabase Auth and UI onboarding/conflict handling are implemented and disabled by default. Repeat isolation/concurrency cases through the actual Supabase API before collecting real customer data.
 2. Import ergonomics: preview, mapping common accounting exports, dataset period/currency validation, cancellable worker parsing and large-table pagination. Current exports must follow the supplied templates.
 3. Source-linked exception lifecycle: stable findings, dismissals with evidence, separate recovered versus investigated amounts, and import version history.
 4. Add retention and unusual-payment controls from the strategy; validate domain calculations with anonymised synthetic fixtures.
@@ -26,7 +26,7 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Production Worker returned HTTP 200 with the expected dashboard, CSP, frame protection and no-store headers.
 - Repository hygiene scan passed. No imported customer records or secrets are included.
 - Browser interaction/visual QA and live Supabase RLS execution have not been performed. Optional read-only WebMCP summary support is feature-detected; no supported WebMCP validation context was available, so it is not claimed verified.
-- CSP currently permits inline scripts for framework hydration; move to nonce-based CSP before authenticated persistence. No raw HTML rendering is used.
+- The first release permitted inline hydration scripts; the later opt-in workspace increment replaced this with per-request nonces. No raw HTML rendering is used.
 
 ## PostgreSQL isolation increment — 7 September 2026
 
@@ -67,3 +67,10 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Live Auth/PostgREST and customer-data operational checks remain outstanding; no real project was connected.
 
 - Validation: 72 tests pass, application lint/type checks and production build pass. Local production HTTP checks verified both screens, unique CSP nonces on all 21 script tags per response, no-store headers and disabled configuration endpoint.
+
+## Workspace access-loss hardening — 7 September 2026
+
+- Expired/denied reads and onboarding now clear identity, memberships and records consistently with saves. Foreign-tenant write responses also invalidate cached access.
+- Recoverable page-load network errors return to business selection with records and paging cleared. Late access errors cannot erase a newer authorised selection.
+- 76 automated tests pass, including regressions for all affected paths. Live Supabase verification remains outstanding; the cloud workspace stays disabled.
+- The previously delivered charcoal/orange trade palette is preserved.

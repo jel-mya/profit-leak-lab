@@ -9,6 +9,7 @@ A working financial exception review application for trade businesses. Includes 
 Node 22.13+ and npm are required.
 
 ```sh
+npm ci
 npm ci --prefix frontend
 npm test
 npm --prefix frontend run lint
@@ -16,6 +17,8 @@ npm run dev
 ```
 
 Open the URL printed by the development server. `npm run build` produces a Cloudflare Worker and assets in `frontend/dist/`; `npm --prefix frontend start` serves the production build locally. CI runs tests, application lint/type analysis and the production build. Vendored Shadcn primitives are excluded from application lint; their original source is preserved.
+
+`npm test` includes executable PostgreSQL tenant-isolation tests. Run just those with `npm run test:db`. They load every migration in filename order into an ephemeral PGlite database, exercise real grants/RLS using non-superuser roles, and discard all synthetic records on exit. They require no Supabase account, credentials, Docker or database files. See [database test scope](docs/architecture.md#database-security-tests).
 
 ## Use
 

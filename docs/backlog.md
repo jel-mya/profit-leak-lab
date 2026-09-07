@@ -8,7 +8,7 @@
 - Tenant/RLS SQL foundation, unit tests and CI.
 
 ## Highest-value next work
-1. Persist actions safely: run the SQL security suite locally, implement Supabase Auth and explicit business onboarding, then action history/concurrency controls. Do not collect real customer data before isolation tests pass.
+1. Persist actions safely: local executable SQL isolation tests now pass. Add action history/concurrency controls and Supabase Auth with explicit business onboarding. Repeat isolation cases through the actual Supabase API before collecting real customer data.
 2. Import ergonomics: preview, mapping common accounting exports, dataset period/currency validation, cancellable worker parsing and large-table pagination. Current exports must follow the supplied templates.
 3. Source-linked exception lifecycle: stable findings, dismissals with evidence, separate recovered versus investigated amounts, and import version history.
 4. Add retention and unusual-payment controls from the strategy; validate domain calculations with anonymised synthetic fixtures.
@@ -27,3 +27,11 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Repository hygiene scan passed. No imported customer records or secrets are included.
 - Browser interaction/visual QA and live Supabase RLS execution have not been performed. Optional read-only WebMCP summary support is feature-detected; no supported WebMCP validation context was available, so it is not claimed verified.
 - CSP currently permits inline scripts for framework hydration; move to nonce-based CSP before authenticated persistence. No raw HTML rendering is used.
+
+## PostgreSQL isolation increment — 7 September 2026
+
+- Verified GitHub `main` contains the first increment `b0b6b48b924ef2e2701b80c86947426c567bb388`; the earlier pending push completed.
+- Added an ephemeral PostgreSQL test harness that loads every migration and tests 13 tenant-access scenarios with actual non-superuser roles and row-level policies.
+- `npm test`: 37 tests passed (23 earlier tests, 13 database subtests and their parent test). PGlite is development-only and its package audit reported zero known vulnerabilities.
+- CI now installs both locked dependency sets and runs the database suite with the existing checks.
+- No production connection, customer-data persistence or UI changes in this increment. Live Supabase Auth/PostgREST verification remains outstanding; the published preview is unchanged.

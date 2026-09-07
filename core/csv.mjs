@@ -33,11 +33,18 @@ export function parseCsv(text, section) {
   if (header.length !== columns[section].length || columns[section].some(k => !header.includes(k))) throw new Error(`Expected columns: ${columns[section].join(', ')}`);
   return parseMappedCsv(text, section, Object.fromEntries(columns[section].map(k => [k, k])));
 }
-export function parseMappedCsv(text, section, mapping) {
+export function parseMappedCsv(text, section, mapping, currencyCheck = null) {
   if (!columns[section]) throw new Error('Unknown import type.');
   const { header, rows } = inspectCsv(text);
   const required = columns[section];
   if (!mapping || Object.keys(mapping).length !== required.length || required.some(k => !Object.hasOwn(mapping, k) || !header.includes(mapping[k]))) throw new Error('Choose a source column for every required field.');
+  if (currencyCheck !== null) {
+    if (!currencyCheck || !header.includes(currencyCheck.column) || !['AUD', 'USD', 'GBP', 'CAD', 'NZD'].includes(currencyCheck.currency)) throw new Error('Choose a valid currency column and review currency.');
+    const index = header.indexOf(currencyCheck.column);
+    rows.forEach((row, i) => {
+      if (row[index].trim().toUpperCase() !== currencyCheck.currency) throw new Error(`Row ${i + 1}: currency does not match the review currency. Separate currencies before importing; no conversion is performed.`);
+    });
+  }
   const sources = required.map(k => mapping[k]);
   if (new Set(sources).size !== sources.length) throw new Error('Each source column can be used only once.');
   const indexes = sources.map(k => header.indexOf(k));

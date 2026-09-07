@@ -48,3 +48,8 @@ test('worker parse errors and transport failures release the worker', async () =
     assert.equal(workers[0].terminated, true);
   }
 });
+
+test('background mapping forwards currency checks instead of silently dropping them', async () => {
+  const request = { type: 'map', text: 'id,customer,dueDate,outstanding,Currency\nD1,Synthetic,2026-09-01,12,USD', section: 'debtors', mapping: { id: 'id', customer: 'customer', dueDate: 'dueDate', outstanding: 'outstanding' }, currencyCheck: { column: 'Currency', currency: 'AUD' } };
+  await assert.rejects(processCsvTask(request), /currency does not match/);
+});

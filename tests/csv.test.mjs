@@ -75,3 +75,18 @@ test('inspection rejects ambiguous headers, oversized row counts and malformed u
   for (const csv of ['Name,Name\n1,2', 'Name, \n1,2', 'Name,Other\n1', Array.from({ length: 101 }, (_, i) => `C${i}`).join(','), 'Name\n' + 'row\n'.repeat(10001)]) assert.throws(() => inspectCsv(csv));
   assert.deepEqual(inspectCsv('\uFEFFA,B\r\n"a,b",c'), { header: ['A', 'B'], rows: [['a,b', 'c']] });
 });
+
+test('optional currency checking validates every row without converting or importing metadata', async () => {
+  const { parseMappedCsv } = await import('../core/csv.mjs');
+  const mapping = { id: 'id', customer: 'customer', dueDate: 'dueDate', outstanding: 'outstanding' };
+  const header = 'id,customer,dueDate,outstanding,Currency\n';
+  const row = 'D1,Synthetic,2026-09-01,12.30,';
+  const check = { column: 'Currency', currency: 'AUD' };
+  const result = parseMappedCsv(header + row + ' aud ', 'debtors', mapping, check);
+  assert.equal(result[0].outstanding, '12.30');
+  assert.equal('Currency' in result[0], false);
+  for (const code of ['USD', '', '$', 'Australian dollar']) assert.throws(() => parseMappedCsv(header + row + code, 'debtors', mapping, check), /Row 1: currency/);
+  assert.throws(() => parseMappedCsv(header + row + 'AUD\nD2,Synthetic,2026-09-01,5,NZD', 'debtors', mapping, check), /Row 2: currency/);
+  assert.throws(() => parseMappedCsv(header + row + 'AUD', 'debtors', mapping, { column: 'missing', currency: 'AUD' }), /valid currency/);
+  assert.deepEqual(parseMappedCsv(header, 'debtors', mapping, check), []);
+});

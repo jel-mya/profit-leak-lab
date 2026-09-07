@@ -237,6 +237,7 @@ export default function Home() {
   const [preview, setPreview] = useState<{
     section: string;
     rows: Record<string, string>[];
+    currencyChecked: boolean;
   } | null>(null);
   const [source, setSource] = useState<{
     text: string;
@@ -244,6 +245,7 @@ export default function Home() {
     section: string;
     count: number;
   } | null>(null);
+  const [currencyColumn, setCurrencyColumn] = useState('none');
   const [mapping, setMapping] = useState<Record<string, string>>({});
   async function prepareMappedPreview() {
     if (!source) return;
@@ -255,11 +257,20 @@ export default function Home() {
         text: source.text,
         section: source.section,
         mapping,
+        currencyCheck:
+          currencyColumn === 'none'
+            ? undefined
+            : { column: source.header[Number(currencyColumn)], currency },
       });
       if (generation !== importGeneration.current) return;
-      setPreview({ section: source.section, rows });
+      setPreview({
+        section: source.section,
+        rows,
+        currencyChecked: currencyColumn !== 'none',
+      });
       setSource(null);
       setMapping({});
+      setCurrencyColumn('none');
       setMessage(
         'Mapped records validated. Review the sample, then apply the import.',
       );
@@ -275,6 +286,7 @@ export default function Home() {
   function cancelImport() {
     setSource(null);
     setMapping({});
+    setCurrencyColumn('none');
     importGeneration.current++;
     processorRef.current?.cancel();
     setPreview(null);
@@ -361,6 +373,7 @@ export default function Home() {
     setPreview(null);
     setSource(null);
     setMapping({});
+    setCurrencyColumn('none');
     setBusy(true);
     try {
       if (file.size > 2 * 1024 * 1024) throw new Error('CSV exceeds 2 MB.');
@@ -1105,6 +1118,35 @@ export default function Home() {
                     numbers. Column mapping does not convert values, currencies
                     or tax bases.
                   </p>
+                  <label>
+                    Currency column (optional)
+                    <Select
+                      value={currencyColumn}
+                      disabled={busy}
+                      onValueChange={(value) => {
+                        if (value) setCurrencyColumn(value);
+                      }}
+                    >
+                      <SelectTrigger aria-label="Currency column for validation">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">
+                          No currency column — all rows use {currency}
+                        </SelectItem>
+                        {source.header.map((header, index) => (
+                          <SelectItem key={header} value={String(index)}>
+                            {header}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </label>
+                  <p className="muted">
+                    If your export includes currency codes, select that column
+                    to check every row against {currency}. Mixed or blank codes
+                    are rejected; amounts are never converted.
+                  </p>
                   <div className="mapping-grid">
                     {columns[source.section as keyof typeof columns].map(
                       (field) => (
@@ -1187,6 +1229,11 @@ export default function Home() {
                     Currency: {currency} (retained while imported records are
                     loaded). Review date: {asOf}. Confirm these match your
                     export; no currency conversion is performed.
+                  </p>
+                  <p className="muted">
+                    {preview.currencyChecked
+                      ? 'Currency column checked for every record.'
+                      : 'No currency column was checked. Confirm that every record uses the selected review currency.'}
                   </p>
                   {preview.rows.length === 0 ? (
                     <p className="risk">

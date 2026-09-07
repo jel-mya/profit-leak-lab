@@ -164,3 +164,10 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - 123 tests pass, including worker-task bounds, cancellation/replacement and error cleanup. Production build emitted the worker; a Node worker shim executed that actual bundle successfully for inspection, mapping and errors. CI now runs this smoke check after building.
 - This is not browser interaction verification. Final apply/review calculations and transfer/copy overhead remain on the main thread; no complete performance guarantee is claimed.
 - Canonical GitHub delivery only while preview transfer approval remains pending.
+
+## Validate optional export currency columns — 8 September 2026
+
+- Mapping now offers an optional currency-code column. Every mapped row must match the selected review currency; mixed, blank or non-code values fail before preview. Case and surrounding whitespace are normalised, but amounts are never converted.
+- The preview states whether currency codes were checked. Choosing no currency column explicitly leaves the single-currency assertion with the user; the app does not infer currency from symbols, amounts or filenames.
+- 125 tests pass, including mismatched rows, missing currency columns, metadata exclusion and worker forwarding. The emitted-worker smoke also checks rejection of mismatched currency.
+- Canonical GitHub delivery only; preview transfer approval remains pending.

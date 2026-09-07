@@ -27,6 +27,9 @@ try {
   assert.equal(inspected.ok, true); assert.equal(inspected.result.count, 1);
   const mapped = await receive({ type: 'map', text, section: 'debtors', mapping: { id: 'id', customer: 'customer', dueDate: 'dueDate', outstanding: 'outstanding' } });
   assert.equal(mapped.ok, true); assert.equal(mapped.result.rows[0].outstanding, '12.30');
+  const mismatch = await receive({ type: 'map', text: text.replace('outstanding\n', 'outstanding,Currency\n') + ',USD', section: 'debtors', mapping: { id: 'id', customer: 'customer', dueDate: 'dueDate', outstanding: 'outstanding' }, currencyCheck: { column: 'Currency', currency: 'AUD' } });
+  assert.equal(mismatch.ok, false);
+  assert.match(mismatch.error, /currency/);
   assert.equal((await receive({ type: 'unknown' })).ok, false);
   console.log('Emitted CSV worker smoke passed (Node worker shim; not browser verification).');
 } finally { await worker.terminate(); }

@@ -6,7 +6,7 @@ export async function processCsvTask(request) {
     const { header, rows } = inspectCsv(text);
     return { text, header, count: rows.length };
   }
-  if (request?.type === 'map') return { rows: parseMappedCsv(request.text, request.section, request.mapping) };
+  if (request?.type === 'map') return { rows: parseMappedCsv(request.text, request.section, request.mapping, request.currencyCheck ?? null) };
   throw new Error('Unknown CSV operation.');
 }
 export function createCsvProcessor(factory) {

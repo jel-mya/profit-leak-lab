@@ -22,12 +22,12 @@ function draftFields(draft) {
 }
 export function createWorkspace(port) {
   let generation = 0;
-  let state = { phase: 'signedOut', userId: null, memberships: [], businessId: null, actions: [], hasMore: false, offset: 0, conflict: null, error: null };
+  let state = { phase: 'signedOut', userId: null, memberships: [], businessId: null, actions: [], hasMore: false, offset: 0, conflict: null, history: null, error: null };
   const listeners = new Set();
   function publish(patch) { state = { ...state, ...patch }; for (const listener of listeners) listener(structuredClone(state)); }
   function clear(phase = 'signedOut', error = null) {
     generation++;
-    publish({ phase, userId: null, memberships: [], businessId: null, actions: [], hasMore: false, offset: 0, conflict: null, error });
+    publish({ phase, userId: null, memberships: [], businessId: null, actions: [], hasMore: false, offset: 0, conflict: null, history: null, error });
   }
   function current(ticket) { if (ticket !== generation) throw new WorkspaceError('STALE_REQUEST'); }
   function code(error) { return error?.code ?? 'REQUEST_FAILED'; }
@@ -53,7 +53,7 @@ export function createWorkspace(port) {
       if (!Number.isSafeInteger(offset) || offset < 0) throw new WorkspaceError('INVALID_PAGE');
       if (!state.userId || !state.memberships.some(m => m.business_id === id)) throw new WorkspaceError('ACCESS_DENIED');
       const ticket = ++generation;
-      publish({ phase: 'loading', businessId: id, actions: [], hasMore: false, conflict: null, error: null });
+      publish({ phase: 'loading', businessId: id, actions: [], hasMore: false, conflict: null, history: null, error: null });
       try {
         const result = await port.actions(id, offset); current(ticket);
         if (result.rows.some(a => a.business_id !== id)) throw new WorkspaceError('INVALID_RESPONSE');
@@ -66,6 +66,26 @@ export function createWorkspace(port) {
         throw error;
       }
     },
+    async loadHistory(id, before = null) {
+      if (state.phase !== 'ready') throw new WorkspaceError('NOT_READY');
+      if (!state.actions.some(a => a.id === id)) throw new WorkspaceError('ACTION_NOT_LOADED');
+      if (before !== null && !/^[1-9][0-9]*$/.test(String(before))) throw new WorkspaceError('INVALID_PAGE');
+      const ticket = ++generation;
+      const businessId = state.businessId;
+      publish({ history: null, error: null });
+      try {
+        const result = await port.history(businessId, id, before); current(ticket);
+        if (result.rows.some(event => event.action_id !== id || event.business_id !== businessId)) throw new WorkspaceError('INVALID_RESPONSE');
+        publish({ history: { actionId: id, rows: result.rows, hasMore: result.hasMore } });
+      } catch (error) {
+        if (ticket === generation) {
+          if (accessLost(error)) clear('signedOut', 'ACCESS_LOST');
+          else publish({ error: code(error) });
+        }
+        throw error;
+      }
+    },
+    closeHistory() { if (state.phase !== 'ready') throw new WorkspaceError('NOT_READY'); generation++; publish({ history: null }); },
     async save(id, draft) {
       if (state.phase !== 'ready') throw new WorkspaceError('NOT_READY');
       const membership = state.memberships.find(m => m.business_id === state.businessId);
@@ -75,7 +95,7 @@ export function createWorkspace(port) {
       const values = draftFields(draft);
       const ticket = ++generation;
       // Serialise saves in this controller. Database revisions remain authoritative.
-      publish({ phase: 'saving', error: null });
+      publish({ phase: 'saving', history: null, error: null });
       try {
         const saved = await port.saveAction(original.id, original.revision, values); current(ticket);
         if (saved.id !== id || saved.business_id !== state.businessId) throw new WorkspaceError('INVALID_RESPONSE');
@@ -119,7 +139,7 @@ export function createWorkspace(port) {
       const values = draftFields(draft);
       const id = state.businessId;
       const ticket = ++generation;
-      publish({ phase: 'saving', error: null });
+      publish({ phase: 'saving', history: null, error: null });
       try {
         const created = await port.createAction(id, values); current(ticket);
         if (created.business_id !== id) throw new WorkspaceError('INVALID_RESPONSE');

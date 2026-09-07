@@ -398,6 +398,13 @@ export default function CloudWorkspace() {
                       {a.due_date || 'No due date'} · revision {a.revision}
                     </p>
                     <p>{a.note}</p>
+                    <Button
+                      variant="outline"
+                      disabled={busy || state.phase !== 'ready'}
+                      onClick={() => void perform(() => ws!.loadHistory(a.id))}
+                    >
+                      View change history
+                    </Button>
                     {canEdit && (
                       <Button
                         variant="outline"
@@ -409,6 +416,147 @@ export default function CloudWorkspace() {
                     )}
                   </article>
                 ))}
+                {state.history && (
+                  <section
+                    className="history-review"
+                    aria-label="Action change history"
+                  >
+                    <h3>
+                      Change history ·{' '}
+                      {
+                        state.actions.find(
+                          (a) => a.id === state.history!.actionId,
+                        )?.title
+                      }
+                    </h3>
+                    <p className="muted">
+                      Newest first. Saved changes are read-only. A baseline is
+                      the record captured when history tracking began, not an
+                      earlier edit.
+                    </p>
+                    {state.history.rows.length === 0 && (
+                      <p>No history records are available on this page.</p>
+                    )}
+                    {state.history.rows.map((event) => (
+                      <article className="action-card" key={event.id}>
+                        <h3>
+                          {event.event_type === 'baseline'
+                            ? 'Tracking baseline'
+                            : event.event_type === 'created'
+                              ? 'Action created'
+                              : 'Action updated'}{' '}
+                          · revision {event.revision}
+                        </h3>
+                        <p className="muted">
+                          <time dateTime={event.recorded_at}>
+                            {event.recorded_at}
+                          </time>
+                        </p>
+                        <p className="muted">
+                          {event.actor_id === state.userId
+                            ? 'Recorded by your account'
+                            : event.actor_id
+                              ? `Recorded by account ${event.actor_id}`
+                              : 'No actor recorded for this baseline'}
+                        </p>
+                        <dl className="history-fields">
+                          {(
+                            [
+                              'title',
+                              'owner_label',
+                              'due_date',
+                              'status',
+                              'note',
+                            ] as const
+                          )
+                            .filter(
+                              (field) =>
+                                !event.before_state ||
+                                event.before_state[field] !==
+                                  event.after_state[field],
+                            )
+                            .map((field) => (
+                              <div key={field}>
+                                <dt>
+                                  {
+                                    {
+                                      title: 'Action',
+                                      owner_label: 'Owner',
+                                      due_date: 'Due date',
+                                      status: 'Status',
+                                      note: 'Evidence / outcome',
+                                    }[field]
+                                  }
+                                </dt>
+                                {event.before_state && (
+                                  <dd>
+                                    Before:{' '}
+                                    {event.before_state[field] || 'Not set'}
+                                  </dd>
+                                )}
+                                <dd>
+                                  {event.before_state
+                                    ? 'After'
+                                    : 'Recorded value'}
+                                  : {event.after_state[field] || 'Not set'}
+                                </dd>
+                              </div>
+                            ))}
+                        </dl>
+                        {event.before_state &&
+                          [
+                            'title',
+                            'owner_label',
+                            'due_date',
+                            'status',
+                            'note',
+                          ].every(
+                            (field) =>
+                              event.before_state![
+                                field as keyof typeof event.before_state
+                              ] ===
+                              event.after_state[
+                                field as keyof typeof event.after_state
+                              ],
+                          ) && <p>No editable field values changed.</p>}
+                      </article>
+                    ))}
+                    <div className="import-actions">
+                      <Button
+                        variant="outline"
+                        disabled={busy}
+                        onClick={() =>
+                          void perform(() =>
+                            ws!.loadHistory(state.history!.actionId),
+                          )
+                        }
+                      >
+                        Latest changes
+                      </Button>
+                      <Button
+                        variant="outline"
+                        disabled={busy || !state.history.hasMore}
+                        onClick={() =>
+                          void perform(() =>
+                            ws!.loadHistory(
+                              state.history!.actionId,
+                              state.history!.rows.at(-1)!.revision,
+                            ),
+                          )
+                        }
+                      >
+                        Older changes
+                      </Button>
+                      <Button
+                        variant="outline"
+                        disabled={busy}
+                        onClick={() => ws!.closeHistory()}
+                      >
+                        Close history
+                      </Button>
+                    </div>
+                  </section>
+                )}
                 <div className="import-actions">
                   <Button
                     variant="outline"

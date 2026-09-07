@@ -23,6 +23,12 @@ Official contracts consulted: [Supabase getUser](https://supabase.com/docs/refer
 
 Set Worker environment variables CLOUD_WORKSPACE_ENABLED=true, SUPABASE_URL=https://YOUR-PROJECT.supabase.co and SUPABASE_PUBLISHABLE_KEY to a modern public sb_publishable key, after applying all migrations and completing live isolation checks. The default is disabled. Invalid settings fail closed. /api/workspace-config returns only these validated public connection settings with no-store caching. Service-role and legacy JWT keys are rejected.
 
-The pilot accepts existing verified email/password accounts. Sessions are held in memory and refresh loses sign-in. Sign-out clears records immediately and ends the local SDK session. No registration, password recovery, invitations or audit-history viewer is provided yet. Review operational/privacy requirements in architecture.md before real customer use.
+The pilot accepts existing verified email/password accounts. Sessions are held in memory and refresh loses sign-in. Sign-out clears records immediately and ends the local SDK session. No registration, password recovery or invitations are provided yet. The action history viewer is available to all authorised membership roles, including viewers. Review operational/privacy requirements in architecture.md before real customer use.
 
 Access errors during business reads and onboarding now use the same clear-state boundary as action writes. Unexpected foreign-tenant responses also clear access. Network page errors clear rows and paging but retain verified membership choices for an explicit retry. Late failed requests cannot invalidate a newer session or business selection. These checks do not detect silent server revocation until a request exposes the change; RLS remains authoritative.
+
+## Change history
+
+Open history from a loaded action. Reads filter both the selected business and action ID and return at most 50 events, newest revision first. Older-page reads use a revision cursor; they do not accumulate an unbounded event list. The UI shows event time, recorded account, changed editable fields and before/after values. Migration baselines are explicitly labelled and have no invented actor.
+
+History clears on tenant/session changes and writes. Generation checks discard late responses, and foreign-tenant responses fail closed. The UI never writes history; database triggers and RLS remain authoritative. Live Supabase integration and browser interaction verification remain outstanding.

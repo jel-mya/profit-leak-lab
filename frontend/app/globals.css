@@ -702,3 +702,8 @@ td, .signal, .coverage, .stat p, .stat span, .cloud-form label { font-size: 14px
 .table-paging [data-slot='pagination-item'] span { padding: 0 8px; }
 
 .mapping-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin: 20px 0; }
+
+.history-review { border-left: 4px solid var(--primary); padding: 16px; margin-top: 24px; overflow-wrap: anywhere; }
+.history-fields { display: grid; gap: 12px; font-size: 14px; }
+.history-fields dt { font-weight: 700; }
+.history-fields dd { margin-top: 4px; white-space: pre-wrap; }

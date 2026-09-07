@@ -225,3 +225,62 @@ test('late denied read cannot clear a newer authorised business selection', asyn
   assert.equal(workspace.snapshot().phase, 'ready');
   assert.equal(workspace.snapshot().businessId, 'b');
 });
+
+const historyEvent = { id: 1, business_id: 'a', action_id: record.id, revision: 1, event_type: 'created', actor_id: user.id, recorded_at: '2026-09-01T00:00:00Z', before_state: null, after_state: draft };
+test('history is available to a viewer but only for a loaded action', async () => {
+  const calls = [];
+  const { workspace } = setup({ memberships: async () => [{ business_id: 'a', role: 'viewer' }], history: async (...args) => { calls.push(args); return { rows: [historyEvent], hasMore: false }; } });
+  await ready(workspace);
+  await assert.rejects(workspace.loadHistory('foreign'), e => e.code === 'ACTION_NOT_LOADED');
+  await workspace.loadHistory(record.id);
+  assert.deepEqual(calls, [['a', record.id, null]]);
+  assert.equal(workspace.snapshot().history.rows[0].revision, 1);
+  workspace.closeHistory();
+  assert.equal(workspace.snapshot().history, null);
+});
+test('sign-out and business switches discard pending history responses', async () => {
+  for (const transition of ['signout', 'switch']) {
+    const pending = deferred();
+    const { workspace } = setup({ history: () => pending.promise });
+    await ready(workspace);
+    const reading = workspace.loadHistory(record.id);
+    if (transition === 'signout') workspace.disconnect();
+    else await workspace.selectBusiness('b');
+    pending.resolve({ rows: [historyEvent], hasMore: false });
+    await assert.rejects(reading, e => e.code === 'STALE_REQUEST');
+    assert.equal(workspace.snapshot().history, null);
+  }
+});
+test('foreign history responses clear cached access and cannot display another tenant event', async () => {
+  const { workspace } = setup({ history: async () => ({ rows: [{ ...historyEvent, business_id: 'foreign' }], hasMore: false }) });
+  await ready(workspace);
+  await assert.rejects(workspace.loadHistory(record.id), e => e.code === 'INVALID_RESPONSE');
+  assert.equal(workspace.snapshot().phase, 'signedOut');
+  assert.equal(workspace.snapshot().history, null);
+});
+test('saving invalidates old history and a late history response cannot undo the save', async () => {
+  const pending = deferred();
+  const { workspace } = setup({ history: () => pending.promise });
+  await ready(workspace);
+  const reading = workspace.loadHistory(record.id);
+  await workspace.save(record.id, { ...draft, note: 'Synthetic evidence' });
+  pending.resolve({ rows: [historyEvent], hasMore: false });
+  await assert.rejects(reading, e => e.code === 'STALE_REQUEST');
+  assert.equal(workspace.snapshot().history, null);
+  assert.equal(workspace.snapshot().actions[0].revision, 2);
+});
+test('history adapter filters tenant and action, orders revisions and uses a bounded cursor', async () => {
+  const calls = [];
+  const builder = { then(resolve) { return Promise.resolve({ data: Array.from({ length: 51 }, () => historyEvent), error: null }).then(resolve); } };
+  for (const method of ['select', 'eq', 'order', 'lt', 'limit']) builder[method] = (...args) => { calls.push([method, ...args]); return builder; };
+  const port = createSupabasePort({ from: table => { calls.push(['from', table]); return builder; } });
+  const page = await port.history('a', record.id, '9007199254740993');
+  assert.equal(page.rows.length, 50);
+  assert.equal(page.hasMore, true);
+  assert.ok(calls.some(c => c[0] === 'eq' && c[1] === 'business_id' && c[2] === 'a'));
+  assert.ok(calls.some(c => c[0] === 'eq' && c[1] === 'action_id' && c[2] === record.id));
+  assert.ok(calls.some(c => c[0] === 'lt' && c[2] === '9007199254740993'));
+  assert.ok(calls.some(c => c[0] === 'limit' && c[1] === 51));
+  assert.ok(calls.some(c => c[0] === 'order' && c[1] === 'revision' && c[2].ascending === false));
+  await assert.rejects(port.history('a', record.id, -1), e => e.code === 'INVALID_PAGE');
+});

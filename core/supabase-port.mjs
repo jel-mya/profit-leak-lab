@@ -23,6 +23,15 @@ export function createSupabasePort(client) {
         .eq('business_id', businessId).order('id').range(offset, offset + 100));
       return { rows: rows.slice(0, 100), hasMore: rows.length > 100 };
     },
+    async history(businessId, actionId, before = null) {
+      if (before !== null && !/^[1-9][0-9]*$/.test(String(before))) throw new WorkspaceError('INVALID_PAGE');
+      let query = client.from('action_events')
+        .select('id,action_id,business_id,revision,event_type,actor_id,recorded_at,before_state,after_state')
+        .eq('business_id', businessId).eq('action_id', actionId).order('revision', { ascending: false });
+      if (before !== null) query = query.lt('revision', before);
+      const rows = await unwrap(query.limit(51));
+      return { rows: rows.slice(0, 50), hasMore: rows.length > 50 };
+    },
     saveAction(id, revision, draft) {
       return unwrap(client.rpc('update_control_action', {
         p_action_id: id, p_expected_revision: revision,

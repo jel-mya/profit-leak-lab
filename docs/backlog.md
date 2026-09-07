@@ -97,3 +97,10 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Existing amount/date/ID validation remains intact. Input inspection rejects duplicate/empty headers, more than 100 columns, more than 10,000 records and malformed row widths, including unused columns.
 - Raw text remains only in browser memory until mapping, cancellation or replacement; it is not uploaded or saved. Mapped previews retain the separate apply/cancel step.
 - 86 tests pass, including mapping ambiguity, unused-field exclusion, invalid values and inspection bounds. Browser interaction testing remains unperformed.
+
+## Read-only action history viewer — 7 September 2026
+
+- Connected pilot actions now expose change history for owners, editors and viewers. Events show recorded account/time and before/after editable values; baselines are distinguished from actual edits.
+- Reads filter business and action and page 50 events at a time using descending revision cursors. Session/tenant changes and writes invalidate cached history and late responses.
+- 91 tests pass, including viewer reads, unloaded-action rejection, foreign-tenant response rejection, late sign-out/switch/save responses and bounded adapter query construction.
+- The viewer remains behind the existing disabled-by-default cloud configuration gate. No Supabase project was connected or database migration applied; live integration remains a release gate.

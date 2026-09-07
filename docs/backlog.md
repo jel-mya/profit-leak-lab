@@ -8,7 +8,7 @@
 - Tenant/RLS SQL foundation, unit tests and CI.
 
 ## Highest-value next work
-1. Persist actions safely: local SQL isolation, revision-checked updates and client-immutable history now pass tests. Add Supabase Auth, explicit business onboarding and UI conflict handling. Repeat isolation/concurrency cases through the actual Supabase API before collecting real customer data.
+1. Persist actions safely: local SQL isolation, revision-checked updates, client-immutable history and starter-business onboarding now pass tests. Add Supabase Auth and UI onboarding/conflict handling. Repeat isolation/concurrency cases through the actual Supabase API before collecting real customer data.
 2. Import ergonomics: preview, mapping common accounting exports, dataset period/currency validation, cancellable worker parsing and large-table pagination. Current exports must follow the supplied templates.
 3. Source-linked exception lifecycle: stable findings, dismissals with evidence, separate recovered versus investigated amounts, and import version history.
 4. Add retention and unusual-payment controls from the strategy; validate domain calculations with anonymised synthetic fixtures.
@@ -44,3 +44,10 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - All 46 local tests pass: 23 original tests, 22 database subtests and their parent. Tests include stale-save rollback, history immutability, populated-schema migration and spoofed insertion fields.
 - No live migration or UI change. Real Supabase Auth/PostgREST and multi-connection locking tests remain release gates.
 - Remote verification succeeded after the temporary approval-review usage limit reset; no concurrent branch changes were present.
+
+## Starter-business onboarding — 7 September 2026
+
+- Added an authenticated-only RPC creating a starter business and caller owner membership atomically, without accepting user IDs, tenant IDs or roles from the client.
+- Added a private per-identity mapping and transaction lock. Matching retries reuse the existing business; changed retries return conflict. Replays cannot restore revoked ownership or join another business by name.
+- All 52 local tests pass, including six onboarding scenarios. No dependencies, frontend or deployed database changed.
+- Documented the future UI contract and live Auth, abuse-prevention and multi-connection verification gates in `docs/onboarding.md`.

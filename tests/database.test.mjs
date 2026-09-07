@@ -101,7 +101,7 @@ test('PostgreSQL enforces the tenant security contract', async t => {
       await denied(as(owner, () => db.query(`update public.control_actions set ${column}=$1 where id=$2`, [value, actionA])));
     }
   });
-  await t.test('clients cannot provision businesses, escalate memberships or delete actions', async () => {
+  await t.test('clients cannot directly provision businesses, escalate memberships or delete actions', async () => {
     await denied(as(owner, () => db.query("insert into public.businesses(name,currency) values ('Unauthorized','AUD')")));
     await denied(as(viewer, () => db.query("update public.memberships set role='owner' where user_id=$1", [viewer])));
     await denied(as(owner, () => db.query("insert into public.memberships values ($1,$2,'owner')", [businessB, owner])));
@@ -198,5 +198,61 @@ test('PostgreSQL enforces the tenant security contract', async t => {
     await denied(as(owner, () => save(actionB)));
     await denied(as(owner, () => save('20000000-0000-4000-8000-000000000099')));
     await denied(as(null, () => save(), 'anon'));
+  });
+  await t.test('onboarding atomically creates a business and caller-only owner membership', async () => {
+    await as(outsider, async () => {
+      const { rows: [business] } = await db.query("select * from public.create_business('  Synthetic starter  ','AUD')");
+      assert.equal(business.name, 'Synthetic starter');
+      assert.equal(business.currency, 'AUD');
+      const { rows } = await db.query('select business_id,user_id,role from public.memberships');
+      assert.deepEqual(rows, [{ business_id: business.id, user_id: outsider, role: 'owner' }]);
+      assert.equal((await db.query("insert into public.control_actions(business_id,title) values ($1,'First task') returning id", [business.id])).rows.length, 1);
+    });
+  });
+  await t.test('matching onboarding retries return the same business without duplicate memberships', async () => {
+    await as(outsider, async () => {
+      const first = await db.query("select * from public.create_business('Synthetic starter','AUD')");
+      const retry = await db.query("select * from public.create_business('Synthetic starter','AUD')");
+      assert.equal(first.rows[0].id, retry.rows[0].id);
+      assert.equal((await db.query('select * from public.businesses')).rows.length, 1);
+      assert.equal((await db.query('select * from public.memberships')).rows.length, 1);
+    });
+  });
+  await t.test('matching another business name never grants access to that tenant', async () => {
+    await as(outsider, async () => {
+      const { rows: [business] } = await db.query("select * from public.create_business('Synthetic A','AUD')");
+      assert.notEqual(business.id, businessA);
+      assert.equal((await db.query('select * from public.businesses where id=$1', [businessA])).rows.length, 0);
+      assert.equal((await db.query('select * from public.control_actions where id=$1', [actionA])).rows.length, 0);
+    });
+  });
+  await t.test('changed onboarding retry fails instead of creating or modifying another tenant', async () => {
+    await as(outsider, async () => {
+      await db.query("select public.create_business('Synthetic starter','AUD')");
+      await db.exec('savepoint changed');
+      await assert.rejects(db.query("select public.create_business('Different','USD')"), e => e.code === 'PT409');
+      await db.exec('rollback to savepoint changed');
+      assert.deepEqual((await db.query('select name,currency from public.businesses')).rows, [{ name: 'Synthetic starter', currency: 'AUD' }]);
+    });
+  });
+  await t.test('onboarding rejects unauthenticated calls and malformed business details', async () => {
+    await denied(as(null, () => db.query("select public.create_business('Synthetic','AUD')"), 'anon'));
+    await denied(as(null, () => db.query("select public.create_business('Synthetic','AUD')")));
+    for (const [name, currency] of [[' ', 'AUD'], [null, 'AUD'], ['x'.repeat(201), 'AUD'], ['Synthetic', 'BTC'], ['Synthetic', null]]) {
+      await assert.rejects(as(outsider, () => db.query('select public.create_business($1,$2)', [name, currency])), e => e.code === '22023');
+    }
+  });
+  await t.test('onboarding mapping is private and replay cannot restore revoked ownership', async () => {
+    await denied(as(outsider, () => db.query('select * from private.business_onboarding')));
+    await db.exec('begin');
+    try {
+      await db.query("select set_config('request.jwt.claim.sub',$1,true)", [outsider]);
+      await db.exec('set local role authenticated');
+      const { rows: [business] } = await db.query("select * from public.create_business('Synthetic starter','AUD')");
+      await db.exec('reset role');
+      await db.query('delete from public.memberships where business_id=$1', [business.id]);
+      await db.exec('set local role authenticated');
+      await assert.rejects(db.query("select public.create_business('Synthetic starter','AUD')"), e => e.code === '42501');
+    } finally { await db.exec('rollback'); }
   });
 });

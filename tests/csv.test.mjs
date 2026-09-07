@@ -95,3 +95,20 @@ test('payment import rejects masked invoice references before showing a valid pr
   assert.throws(() => parseCsv(template('payments') + 'P1,S1,Fictional,***,10', 'payments'), /letters or numbers/);
   assert.equal(parseCsv(template('payments') + 'P1,S1,Fictional,INV-1,10', 'payments')[0].invoice, 'INV-1');
 });
+
+test('CSV column bounds stop parsing before a malformed trailing record', async () => {
+  const { inspectCsv } = await import('../core/csv.mjs');
+  const header = Array.from({ length: 100 }, (_, i) => `C${i}`).join(',');
+  const record = Array(100).fill('value').join(',');
+  assert.equal(inspectCsv(header + '\n' + record).rows[0].length, 100);
+  for (const text of [header + ',extra\n"unclosed', header + '\n' + record + ',extra\n"unclosed', ','.repeat(101) + '\n"unclosed']) {
+    assert.throws(() => inspectCsv(text), /100 columns/);
+  }
+});
+test('CSV record bounds include exactly 10,000 records and ignore blank lines', async () => {
+  const { inspectCsv } = await import('../core/csv.mjs');
+  const full = '\nName\n' + 'value\n\n'.repeat(10000);
+  assert.equal(inspectCsv(full).rows.length, 10000);
+  assert.throws(() => inspectCsv(full + 'extra\n"unclosed'), /10,000 records/);
+  assert.deepEqual(inspectCsv('Name\n"first\nsecond"\n'), { header: ['Name'], rows: [['first\nsecond']] });
+});

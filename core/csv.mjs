@@ -3,8 +3,19 @@ export function inspectCsv(text) {
   if (new TextEncoder().encode(text).length > 2 * 1024 * 1024) throw new Error('CSV exceeds 2 MB.');
   text = text.replace(/^\uFEFF/, '');
   const rows = []; let row = [], field = '', quoted = false, closed = false;
-  function cell() { row.push(field); field = ''; closed = false; }
-  function line() { cell(); if (row.some(v => v.trim() !== '')) rows.push(row); row = []; }
+  function cell() {
+    if (row.length >= 100) throw new Error('CSV exceeds 100 columns. Export only the fields needed for review.');
+    row.push(field); field = ''; closed = false;
+  }
+  function line() {
+    cell();
+    if (row.some(v => v.trim() !== '')) {
+      // Include the header in this bound; ignored blank lines consume no record slots.
+      if (rows.length >= 10001) throw new Error('CSV exceeds 10,000 records.');
+      rows.push(row);
+    }
+    row = [];
+  }
   for (let i = 0; i < text.length; i++) {
     const c = text[i];
     if (quoted) {
@@ -22,8 +33,6 @@ export function inspectCsv(text) {
   if (field || row.length || closed) line();
   const header = rows.shift()?.map(v => v.trim());
   if (!header || header.some(h => !h) || new Set(header).size !== header.length) throw new Error('CSV headers must be non-empty and unique.');
-  if (header.length > 100) throw new Error('CSV exceeds 100 columns. Export only the fields needed for review.');
-  if (rows.length > 10000) throw new Error('CSV exceeds 10,000 records.');
   rows.forEach((r, i) => { if (r.length !== header.length) throw new Error(`Row ${i + 1}: incorrect number of columns.`); });
   return { header, rows };
 }

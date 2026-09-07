@@ -177,3 +177,10 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Payment imports now reject invoice references containing no letters or numbers before preview or calculation. Masked references such as `***` can no longer create misleading duplicate-payment flags.
 - Existing case/separator matching and international letters/digits remain supported; supplier identity and amount remain part of every match.
 - 128 automated tests passed, including import rejection and matching regressions. Live Supabase verification remains outstanding. Preview publishing remains pending the previously requested source-transfer approval.
+
+## Enforce CSV limits during parsing — 8 September 2026
+
+- The parser now stops when a row exceeds 100 columns or the file exceeds 10,000 nonblank records, rather than constructing the entire parsed dataset before checking those limits. The existing 2 MB byte ceiling remains.
+- Exactly-at-limit files, blank lines and quoted multiline fields retain their intended behaviour. Oversized blank rows are also rejected by the column bound.
+- 130 automated tests pass, including boundary acceptance and early rejection before a malformed trailing record. This is a bounded allocation safeguard, not a browser performance benchmark.
+- Preview transfer approval remains pending; delivery is to canonical GitHub only.

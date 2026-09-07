@@ -8,7 +8,7 @@
 - Tenant/RLS SQL foundation, unit tests and CI.
 
 ## Highest-value next work
-1. Persist actions safely: local executable SQL isolation tests now pass. Add action history/concurrency controls and Supabase Auth with explicit business onboarding. Repeat isolation cases through the actual Supabase API before collecting real customer data.
+1. Persist actions safely: local SQL isolation, revision-checked updates and client-immutable history now pass tests. Add Supabase Auth, explicit business onboarding and UI conflict handling. Repeat isolation/concurrency cases through the actual Supabase API before collecting real customer data.
 2. Import ergonomics: preview, mapping common accounting exports, dataset period/currency validation, cancellable worker parsing and large-table pagination. Current exports must follow the supplied templates.
 3. Source-linked exception lifecycle: stable findings, dismissals with evidence, separate recovered versus investigated amounts, and import version history.
 4. Add retention and unusual-payment controls from the strategy; validate domain calculations with anonymised synthetic fixtures.
@@ -35,3 +35,12 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - `npm test`: 37 tests passed (23 earlier tests, 13 database subtests and their parent test). PGlite is development-only and its package audit reported zero known vulnerabilities.
 - CI now installs both locked dependency sets and runs the database suite with the existing checks.
 - No production connection, customer-data persistence or UI changes in this increment. Live Supabase Auth/PostgREST verification remains outstanding; the published preview is unchanged.
+
+## Action history and revision checks — 7 September 2026
+
+- Added a populated-database migration for revision counters, baseline events and atomic before/after action history.
+- Added an explicitly authorised update RPC that serializes action and membership changes, rejects stale revisions with `PT409`, and prevents direct client updates from bypassing the check.
+- Tightened insert privileges so clients cannot forge identity, timestamps or starting revisions. History reads remain tenant-scoped; clients have no history-write privileges.
+- All 46 local tests pass: 23 original tests, 22 database subtests and their parent. Tests include stale-save rollback, history immutability, populated-schema migration and spoofed insertion fields.
+- No live migration or UI change. Real Supabase Auth/PostgREST and multi-connection locking tests remain release gates.
+- Remote verification succeeded after the temporary approval-review usage limit reset; no concurrent branch changes were present.

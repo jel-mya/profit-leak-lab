@@ -40,10 +40,23 @@ function setup(fault) {
 test('write verifier accepts a correct synthetic retry/concurrency response contract', async () => {
   const reports = [];
   await verifyWriteIsolation(setup(), 'synthetic-business', 'synthetic-request', message => reports.push(message));
-  assert.equal(reports.length, 3);
+  assert.equal(reports.length, 4);
 });
 test('write verifier catches duplicates, permission leaks, double winners and broken history/replays', async () => {
   for (const [fault, expected] of [['duplicate', /duplicate actions/], ['permission', /Unauthorised/], ['two-winners', /one winner/], ['history', /event count/], ['replay', /overwrote/]]) {
     await assert.rejects(verifyWriteIsolation(setup(fault), 'synthetic-business', 'synthetic-request'), expected);
+  }
+});
+
+test('write verifier independently rejects creation leaks for every unauthorised role', async () => {
+  for (const role of ['foreign', 'viewer', 'anonymous']) {
+    const clients = setup();
+    const original = role === 'anonymous' ? clients.anonymous : clients.users[role === 'foreign' ? 1 : 2];
+    const leaking = { rpc: (name, args) => name === 'create_control_action'
+      ? { single: async () => ({ data: { id: 'unexpected-synthetic-action' }, error: null }) }
+      : original.rpc(name, args) };
+    if (role === 'anonymous') clients.anonymous = leaking;
+    else clients.users[role === 'foreign' ? 1 : 2] = leaking;
+    await assert.rejects(verifyWriteIsolation(clients, 'synthetic-business', 'synthetic-request'), /Unauthorised creation/);
   }
 });

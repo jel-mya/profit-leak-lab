@@ -4,6 +4,11 @@ export async function verifyWriteIsolation(clients, businessId, requestId, repor
   function require(condition, label) { if (!condition) throw new Error(label); }
   const [owner, foreign, viewer] = clients.users;
   const initial = { p_request_id: requestId, p_business_id: businessId, p_title: 'Synthetic live concurrency check', p_owner_label: '', p_due_date: null, p_status: 'Open', p_note: '' };
+  for (const client of [foreign, viewer, clients.anonymous]) {
+    const denied = await client.rpc('create_control_action', initial).single();
+    require(denied.error?.code === '42501', 'Unauthorised creation was not denied');
+  }
+  report('Foreign, viewer and anonymous action creation denied');
   const create = args => owner.rpc('create_control_action', args).single();
   const created = await Promise.all([create(initial), create(initial)]);
   require(created.every(r => !r.error && r.data?.id && Number(r.data.revision) === 1 && r.data.business_id === businessId), 'Concurrent creation failed');

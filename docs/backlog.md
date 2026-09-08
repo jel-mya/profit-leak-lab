@@ -205,3 +205,9 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - UTF-8 BOMs and valid international characters remain supported. No automatic legacy-encoding conversion or identifier repair occurs.
 - 136 tests pass, including invalid leading bytes, malformed/truncated sequences, encoded surrogates and Unicode identifier preservation. The emitted-worker smoke now also exercises invalid encoding rejection.
 - Canonical GitHub delivery only while preview source-transfer approval remains pending. No live Supabase changes.
+
+## Live creation-permission verification preparation — 8 September 2026
+
+- Extended the opt-in live write harness to require permission-denied responses when foreign-business users, viewers and anonymous callers invoke action creation. Previously it checked unauthorised updates only.
+- Added injected tests proving each role's creation leak fails verification independently. A misconfigured disposable project may retain unexpected synthetic records when a denial check fails; no cleanup deletes audit evidence.
+- 137 local tests pass. No live credentials were used, no live API checks ran and no migrations were applied. Actual Supabase verification remains the customer-persistence release gate.

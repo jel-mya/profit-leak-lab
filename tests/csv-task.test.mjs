@@ -53,3 +53,19 @@ test('background mapping forwards currency checks instead of silently dropping t
   const request = { type: 'map', text: 'id,customer,dueDate,outstanding,Currency\nD1,Synthetic,2026-09-01,12,USD', section: 'debtors', mapping: { id: 'id', customer: 'customer', dueDate: 'dueDate', outstanding: 'outstanding' }, currencyCheck: { column: 'Currency', currency: 'AUD' } };
   await assert.rejects(processCsvTask(request), /currency does not match/);
 });
+
+test('CSV inspection rejects invalid UTF-8 instead of changing financial identifiers', async () => {
+  const prefix = new TextEncoder().encode('id,supplierId,supplier,invoice,amount\nP1,S1,Synthetic,');
+  for (const invalid of [[0xff], [0xc3, 0x28], [0xe2, 0x82], [0xed, 0xa0, 0x80]]) {
+    const file = new Blob([prefix, new Uint8Array(invalid)]);
+    await assert.rejects(processCsvTask({ type: 'inspect', file }), /CSV must use UTF-8/);
+  }
+});
+test('CSV inspection preserves valid Unicode identifiers and accepts a UTF-8 BOM', async () => {
+  const text = 'id,supplierId,supplier,invoice,amount\nP1,S1,Synthetic,票-é-123,10';
+  for (const prefix of ['', '\ufeff']) {
+    const inspected = await processCsvTask({ type: 'inspect', file: new Blob([prefix + text]) });
+    const mapped = await processCsvTask({ type: 'map', text: inspected.text, section: 'payments', mapping: { id: 'id', supplierId: 'supplierId', supplier: 'supplier', invoice: 'invoice', amount: 'amount' } });
+    assert.equal(mapped.rows[0].invoice, '票-é-123');
+  }
+});

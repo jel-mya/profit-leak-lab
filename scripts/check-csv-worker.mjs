@@ -25,6 +25,9 @@ try {
   const text = 'id,customer,dueDate,outstanding\nD1,Synthetic,2026-09-01,12.30';
   const inspected = await receive({ type: 'inspect', file: new Blob([text]) });
   assert.equal(inspected.ok, true); assert.equal(inspected.result.count, 1);
+  const invalidEncoding = await receive({ type: 'inspect', file: new Blob([new Uint8Array([0xff])]) });
+  assert.equal(invalidEncoding.ok, false);
+  assert.match(invalidEncoding.error, /UTF-8/);
   const mapped = await receive({ type: 'map', text, section: 'debtors', mapping: { id: 'id', customer: 'customer', dueDate: 'dueDate', outstanding: 'outstanding' } });
   assert.equal(mapped.ok, true); assert.equal(mapped.result.rows[0].outstanding, '12.30');
   const mismatch = await receive({ type: 'map', text: text.replace('outstanding\n', 'outstanding,Currency\n') + ',USD', section: 'debtors', mapping: { id: 'id', customer: 'customer', dueDate: 'dueDate', outstanding: 'outstanding' }, currencyCheck: { column: 'Currency', currency: 'AUD' } });

@@ -2,7 +2,10 @@ import { inspectCsv, parseMappedCsv } from './csv.mjs';
 export async function processCsvTask(request) {
   if (request?.type === 'inspect') {
     if (!request.file || request.file.size > 2 * 1024 * 1024) throw new Error('CSV exceeds 2 MB or is missing.');
-    const text = await request.file.text();
+    const bytes = await request.file.arrayBuffer();
+    let text;
+    try { text = new TextDecoder('utf-8', { fatal: true }).decode(bytes); }
+    catch { throw new Error('CSV must use UTF-8 encoding. Export the file as CSV UTF-8 and try again.'); }
     const { header, rows } = inspectCsv(text);
     return { text, header, count: rows.length };
   }

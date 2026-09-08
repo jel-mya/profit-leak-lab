@@ -198,3 +198,10 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Added adapter-level checks before list slicing, plus controller checks before record access. This does not replace server RLS or claim complete response schema validation.
 - 134 local tests pass, including malformed lists, empty writes and adapter null responses. Live Supabase verification remains outstanding and configuration remains disabled.
 - Preview source transfer remains awaiting the earlier approval; canonical GitHub delivery only.
+
+## Reject invalid CSV encodings — 8 September 2026
+
+- File inspection now decodes UTF-8 strictly instead of silently replacing invalid bytes. This prevents damaged supplier/invoice identifiers from being accepted as changed text; users are prompted to export CSV UTF-8.
+- UTF-8 BOMs and valid international characters remain supported. No automatic legacy-encoding conversion or identifier repair occurs.
+- 136 tests pass, including invalid leading bytes, malformed/truncated sequences, encoded surrogates and Unicode identifier preservation. The emitted-worker smoke now also exercises invalid encoding rejection.
+- Canonical GitHub delivery only while preview source-transfer approval remains pending. No live Supabase changes.

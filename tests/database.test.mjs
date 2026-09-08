@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 import { PGlite } from '@electric-sql/pglite';
+import { requireActionOutcome } from '../core/action-outcome.mjs';
 
 // Fictional identities. Only auth.uid() and auth.users are shimmed; PostgreSQL
 // itself executes every migration, grant, trigger and row-level policy.
@@ -287,6 +288,20 @@ test('PostgreSQL enforces the tenant security contract', async t => {
     } finally { await db.exec('rollback'); }
   });
   const requestId = '30000000-0000-4000-8000-000000000001';
+  await t.test('closed outcomes reject Unicode whitespace consistently with the client', async () => {
+    const whitespace = '\u0009\u000a\u000b\u000c\u000d\u0020\u00a0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000\ufeff';
+    for (const note of [...whitespace, whitespace]) {
+      assert.throws(() => requireActionOutcome('Resolved', note));
+      await assert.rejects(as(editor, () => db.query('select * from public.update_control_action($1,1,$2,$3,null,$4,$5)', [actionA, 'Synthetic closure', '', 'Resolved', note])), e => e.code === '23514');
+    }
+    await as(editor, async () => {
+      const note = whitespace + 'Checked synthetic supplier statement.' + whitespace;
+      assert.doesNotThrow(() => requireActionOutcome('Dismissed', note));
+      const saved = (await db.query('select * from public.update_control_action($1,1,$2,$3,null,$4,$5)', [actionA, 'Synthetic closure', '', 'Dismissed', note])).rows[0];
+      assert.equal(saved.note, note);
+      assert.equal(saved.revision, 2);
+    });
+  });
   const createAction = (key = requestId, business = businessA, title = 'Synthetic retry') =>
     db.query('select * from public.create_control_action($1,$2,$3,$4,null,$5,$6)', [key, business, title, '', 'Open', '']);
   await t.test('matching creation retries return one action with one created event', async () => {

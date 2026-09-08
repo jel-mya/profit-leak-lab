@@ -184,3 +184,10 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Exactly-at-limit files, blank lines and quoted multiline fields retain their intended behaviour. Oversized blank rows are also rejected by the column bound.
 - 130 automated tests pass, including boundary acceptance and early rejection before a malformed trailing record. This is a bounded allocation safeguard, not a browser performance benchmark.
 - Preview transfer approval remains pending; delivery is to canonical GitHub only.
+
+## Consistent whitespace-only outcome rejection — 8 September 2026
+
+- Reproduced a database/client mismatch: some Unicode whitespace-only notes passed PostgreSQL's locale-dependent whitespace check while the client rejected them.
+- Added a transactional migration using the explicit ECMAScript trim character set. New closed-action writes require content under the same rule; existing notes and history are not rewritten. The constraint remains NOT VALID for legacy compatibility.
+- 131 tests pass, including each supported whitespace character, mixed whitespace and preservation of a real note surrounded by whitespace. The regression failed before the migration and passed afterward.
+- No live Supabase migration was applied. Customer persistence remains disabled pending live verification; no preview source transfer was attempted.

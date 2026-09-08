@@ -191,3 +191,10 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Added a transactional migration using the explicit ECMAScript trim character set. New closed-action writes require content under the same rule; existing notes and history are not rewritten. The constraint remains NOT VALID for legacy compatibility.
 - 131 tests pass, including each supported whitespace character, mixed whitespace and preservation of a real note surrounded by whitespace. The regression failed before the migration and passed afterward.
 - No live Supabase migration was applied. Customer persistence remains disabled pending live verification; no preview source transfer was attempted.
+
+## Malformed workspace response handling — 8 September 2026
+
+- Empty successful API responses and malformed action/history lists now fail with INVALID_RESPONSE and clear cached workspace access, matching the existing foreign-tenant response handling. Null save, creation and conflict reload responses can no longer fall through as generic TypeErrors.
+- Added adapter-level checks before list slicing, plus controller checks before record access. This does not replace server RLS or claim complete response schema validation.
+- 134 local tests pass, including malformed lists, empty writes and adapter null responses. Live Supabase verification remains outstanding and configuration remains disabled.
+- Preview source transfer remains awaiting the earlier approval; canonical GitHub delivery only.

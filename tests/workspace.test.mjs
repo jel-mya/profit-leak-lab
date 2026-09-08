@@ -343,3 +343,31 @@ test('creation adapter uses the retry RPC and forwards only the editable payload
   assert.equal(captured.name, 'create_control_action');
   assert.deepEqual(captured.args, { p_request_id: 'synthetic-key', p_business_id: 'a', p_title: draft.title, p_owner_label: '', p_due_date: null, p_status: 'Open', p_note: '' });
 });
+
+test('malformed action and history responses clear cached workspace access', async () => {
+  for (const result of [null, {}, { rows: null }, { rows: [null], hasMore: false }]) {
+    const { workspace } = setup({ actions: async () => result });
+    await workspace.connect();
+    await assert.rejects(workspace.selectBusiness('a'), e => e.code === 'INVALID_RESPONSE');
+    assert.equal(workspace.snapshot().userId, null);
+  }
+  for (const result of [null, {}, { rows: null }, { rows: [null], hasMore: false }]) {
+    const { workspace } = setup({ history: async () => result }); await ready(workspace);
+    await assert.rejects(workspace.loadHistory(record.id), e => e.code === 'INVALID_RESPONSE');
+    assert.deepEqual(workspace.snapshot().actions, []);
+  }
+});
+test('empty save and creation responses cannot retain stale financial state', async () => {
+  for (const operation of ['save', 'create']) {
+    const { workspace } = setup({ saveAction: async () => null, createAction: async () => null });
+    await ready(workspace);
+    await assert.rejects(operation === 'save' ? workspace.save(record.id, draft) : workspace.create(draft), e => e.code === 'INVALID_RESPONSE');
+    assert.equal(workspace.snapshot().phase, 'signedOut');
+    assert.deepEqual(workspace.snapshot().actions, []);
+  }
+});
+
+test('adapter classifies empty successful responses as invalid rather than network failures', async () => {
+  const port = createSupabasePort({ auth: { getUser: async () => ({ data: null, error: null }) } });
+  await assert.rejects(port.verifyUser(), e => e.code === 'INVALID_RESPONSE');
+});

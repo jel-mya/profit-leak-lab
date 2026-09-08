@@ -6,6 +6,7 @@ export function createSupabasePort(client) {
   async function unwrap(request) {
     const { data, error } = await request;
     if (error) throw new WorkspaceError(error.code ?? 'REQUEST_FAILED');
+    if (data === null || data === undefined) throw new WorkspaceError('INVALID_RESPONSE');
     return data;
   }
   return {
@@ -21,6 +22,7 @@ export function createSupabasePort(client) {
       const rows = await unwrap(client.from('control_actions')
         .select('id,business_id,title,owner_label,due_date,status,note,revision')
         .eq('business_id', businessId).order('id').range(offset, offset + 100));
+      if (!Array.isArray(rows)) throw new WorkspaceError('INVALID_RESPONSE');
       return { rows: rows.slice(0, 100), hasMore: rows.length > 100 };
     },
     async history(businessId, actionId, before = null) {
@@ -30,6 +32,7 @@ export function createSupabasePort(client) {
         .eq('business_id', businessId).eq('action_id', actionId).order('revision', { ascending: false });
       if (before !== null) query = query.lt('revision', before);
       const rows = await unwrap(query.limit(51));
+      if (!Array.isArray(rows)) throw new WorkspaceError('INVALID_RESPONSE');
       return { rows: rows.slice(0, 50), hasMore: rows.length > 50 };
     },
     saveAction(id, revision, draft) {

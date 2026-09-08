@@ -211,3 +211,9 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Extended the opt-in live write harness to require permission-denied responses when foreign-business users, viewers and anonymous callers invoke action creation. Previously it checked unauthorised updates only.
 - Added injected tests proving each role's creation leak fails verification independently. A misconfigured disposable project may retain unexpected synthetic records when a denial check fails; no cleanup deletes audit evidence.
 - 137 local tests pass. No live credentials were used, no live API checks ran and no migrations were applied. Actual Supabase verification remains the customer-persistence release gate.
+
+## Exact positive read fixtures — 8 September 2026
+
+- Live read verification now requires the exact requested action ID and history action ID as well as the expected business. An unrelated record in the correct tenant can no longer count as positive fixture evidence.
+- 138 local tests pass, including wrong-record responses for both owners and the viewer. Existing empty-fixture, foreign-record and unavailable-table checks remain covered.
+- No live API calls or migrations were made. Customer persistence remains disabled until actual Supabase verification; preview unchanged.

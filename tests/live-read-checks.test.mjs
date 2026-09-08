@@ -57,3 +57,14 @@ test('live verifier rejects role drift and duplicate authenticated identities', 
   const duplicates = setup(); duplicates.users[2].auth = duplicates.users[0].auth;
   await assert.rejects(verifyReadIsolation(duplicates, fixtures), /distinct/);
 });
+
+test('live verifier rejects unrelated own-tenant actions and history as positive evidence', async () => {
+  for (const [table, key] of [['control_actions', 'id'], ['action_events', 'action_id']]) {
+    for (const index of [0, 1, 2]) {
+      const clients = setup((request, result) => {
+        if (request.index === index && request.table === table && result.data.length) result.data[0][key] = 'unrelated-synthetic-action';
+      });
+      await assert.rejects(verifyReadIsolation(clients, fixtures), /fixture is missing or misassigned/);
+    }
+  }
+});

@@ -25,9 +25,9 @@ export async function verifyReadIsolation(clients, fixtures, report = () => {}) 
     const business = await rows(client.from('businesses').select('id').eq('id', own.business), 'Own business read failed');
     require(business.length === 1 && business[0].id === own.business, 'Own business fixture is missing');
     const actions = await rows(client.from('control_actions').select('id,business_id').eq('id', own.action), 'Own action read failed');
-    require(actions.length === 1 && actions[0].business_id === own.business, 'Own action fixture is missing or misassigned');
+    require(actions.length === 1 && actions[0]?.id === own.action && actions[0].business_id === own.business, 'Own action fixture is missing or misassigned');
     const history = await rows(client.from('action_events').select('action_id,business_id').eq('action_id', own.action).limit(1), 'Own history read failed');
-    require(history.length === 1 && history[0].business_id === own.business, 'Own history fixture is missing or misassigned');
+    require(history.length === 1 && history[0]?.action_id === own.action && history[0].business_id === own.business, 'Own history fixture is missing or misassigned');
     for (const [table, column, id] of [['businesses', 'id', foreign.business], ['control_actions', 'id', foreign.action], ['action_events', 'action_id', foreign.action]]) {
       const hidden = await rows(client.from(table).select(column).eq(column, id).limit(1), 'Foreign read did not return a valid filtered response');
       require(hidden.length === 0, 'Cross-tenant record exposure detected');

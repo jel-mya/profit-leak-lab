@@ -1,6 +1,6 @@
 # Delivery ledger
 
-## Implemented in this increment
+## First canonical increment (historical)
 - Canonical strategy and operational rules recovered from earlier planning.
 - Seven control areas with a working review dashboard, fictional demo and CSV templates/imports.
 - Auditable investigation cash subtotal; separate overlapping job/labour signals.
@@ -9,8 +9,8 @@
 
 ## Highest-value next work
 1. Persist actions safely: local SQL isolation, revision-checked updates, client-immutable history and starter-business onboarding now pass tests. Opt-in Supabase Auth and UI onboarding/conflict handling are implemented and disabled by default. Repeat isolation/concurrency cases through the actual Supabase API before collecting real customer data.
-2. Import ergonomics: preview, mapping common accounting exports, dataset period/currency validation, cancellable worker parsing and large-table pagination. Current exports must follow the supplied templates.
-3. Source-linked exception lifecycle: stable findings, dismissals with evidence, separate recovered versus investigated amounts, and import version history.
+2. Import reporting context: preview, explicit column mapping, optional currency-column checks, cancellable worker parsing and table pagination are implemented. Next capture source reporting dates explicitly and carry them through preview, applied data and action downloads. Do not infer periods from debtor due dates or filenames. Distinguish debtor snapshots, transaction periods and cumulative job costs; explain mismatches without silently filtering records. Verify cancellation/replacement cannot attach old metadata to new records.
+3. Source-linked exception lifecycle: session source IDs, original review context, reimport/settings warnings and required closure notes are implemented. Next retain import-version metadata and reconcile findings across imports without auto-closing them. Recovered money remains separate, requiring an explicit amount, currency, date and evidence; never infer recovery from disappearance or closure.
 4. Add retention and unusual-payment controls from the strategy; validate domain calculations with anonymised synthetic fixtures.
 5. Free Trade Money Check and original symptom-led acquisition pages; no indexed customer dashboard pages.
 6. Billing only after the user handles protected credentials/terms and pricing validation. No spending automatically.
@@ -229,3 +229,10 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Live write verification now compares every returned action field against creation/update audit snapshots and creation replays, rather than checking only status, revision and the winning note. Created events must have a null before-state.
 - 139 local tests pass, including altered before-state identity, after-state business, creation notes and replay identity that previously escaped the narrower checks.
 - These are injected verifier tests, not live Supabase execution. No credentials, customer data, live migrations or preview transfers were used.
+
+## Current release constraints and next-run focus — 8 September 2026
+
+- Live Supabase verification is prepared but has not run. Local PostgreSQL and injected API tests do not satisfy this gate. Cloud configuration remains disabled.
+- Canonical GitHub delivery is working. Sites preview source transfer remains blocked by the earlier automatic approval review pending the user's response; do not retry without approval. The preview does not contain all canonical increments.
+- While these external gates remain unavailable, prioritise reporting context and exception lifecycle above. Add defensive fixes for concrete defects rather than repeatedly extending completed verification scaffolding.
+- This documentation-only increment reconciles the roadmap with delivered code. No new runtime verification is claimed.

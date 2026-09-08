@@ -17,12 +17,16 @@ function setup(fault) {
         const data = structuredClone(record);
         if (fault === 'duplicate' && creates === 2) data.id = 'duplicate';
         if (fault === 'replay' && record.revision === 2) data.note = 'overwritten';
+        if (fault === 'replay-identity' && record.revision === 2) data.id = 'wrong-action';
         return { data, error: null };
       }
       if (record.revision !== args.p_expected_revision && fault !== 'two-winners') return { error: { code: 'PT409' } };
       const before = structuredClone(record);
       record = { ...record, revision: 2, status: args.p_status, note: args.p_note };
       events.push({ revision: 2, event_type: 'updated', before_state: before, after_state: structuredClone(record) });
+      if (fault === 'history-before') events[1].before_state.id = 'wrong-action';
+      if (fault === 'history-after') events[1].after_state.business_id = 'wrong-business';
+      if (fault === 'history-created') events[0].after_state.note = 'invented-note';
       return { data: structuredClone(record), error: null };
     } }; },
     from() {
@@ -59,4 +63,11 @@ test('write verifier independently rejects creation leaks for every unauthorised
     else clients.users[role === 'foreign' ? 1 : 2] = leaking;
     await assert.rejects(verifyWriteIsolation(clients, 'synthetic-business', 'synthetic-request'), /Unauthorised creation/);
   }
+});
+
+test('write verifier rejects altered snapshot fields even when winning notes match', async () => {
+  for (const fault of ['history-before', 'history-after', 'history-created']) {
+    await assert.rejects(verifyWriteIsolation(setup(fault), 'synthetic-business', 'synthetic-request'), /History snapshots/);
+  }
+  await assert.rejects(verifyWriteIsolation(setup('replay-identity'), 'synthetic-business', 'synthetic-request'), /overwrote/);
 });

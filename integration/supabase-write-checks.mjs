@@ -2,6 +2,9 @@
 // This intentionally leaves one synthetic action and its append-only history.
 export async function verifyWriteIsolation(clients, businessId, requestId, report = () => {}) {
   function require(condition, label) { if (!condition) throw new Error(label); }
+  function matchesRecord(snapshot, record) {
+    return snapshot && record && Object.keys(record).every(key => Object.hasOwn(snapshot, key) && snapshot[key] === record[key]);
+  }
   const [owner, foreign, viewer] = clients.users;
   const initial = { p_request_id: requestId, p_business_id: businessId, p_title: 'Synthetic live concurrency check', p_owner_label: '', p_due_date: null, p_status: 'Open', p_note: '' };
   for (const client of [foreign, viewer, clients.anonymous]) {
@@ -31,9 +34,13 @@ export async function verifyWriteIsolation(clients, businessId, requestId, repor
   const winners = race.filter(r => !r.error && r.data?.id === actionId && Number(r.data.revision) === 2);
   require(winners.length === 1 && race.filter(r => r.error?.code === 'PT409').length === 1, 'Concurrent updates did not produce one winner and one conflict');
   const replay = await create(initial);
-  require(!replay.error && Number(replay.data?.revision) === 2 && replay.data.note === winners[0].data.note, 'Creation replay overwrote a later update');
+  require(!replay.error && matchesRecord(replay.data, winners[0].data), 'Creation replay overwrote a later update');
   const history = await owner.from('action_events').select('revision,event_type,before_state,after_state').eq('action_id', actionId).order('revision').limit(3);
   require(!history.error && history.data?.length === 2, 'Unexpected event count after concurrent requests');
   require(Number(history.data[0].revision) === 1 && history.data[0].event_type === 'created' && Number(history.data[1].revision) === 2 && history.data[1].event_type === 'updated' && history.data[1].before_state?.status === 'Open' && history.data[1].after_state?.note === winners[0].data.note, 'History does not match the winning revision');
+  require(history.data[0].before_state === null
+    && matchesRecord(history.data[0].after_state, created[0].data)
+    && matchesRecord(history.data[1].before_state, created[0].data)
+    && matchesRecord(history.data[1].after_state, winners[0].data), 'History snapshots do not match the action records');
   report('Concurrent updates produced one winner, one conflict and exactly two history events');
 }

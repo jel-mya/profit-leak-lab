@@ -223,3 +223,9 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Replaced the business-only action index with `(business_id, id)` to match the adapter's tenant filter and ordered pagination. The leading business column still supports existing tenant-only lookups.
 - The migration changes no records, grants or row-level policies. Apply through the migration process before enabling a live workspace; normal index creation can hold write locks, so schedule appropriately for an existing populated service.
 - 138 local tests pass with all migrations loaded, including PostgreSQL tenant isolation and action concurrency contracts. No live migration or production performance benchmark was run.
+
+## Complete live audit snapshot comparisons — 8 September 2026
+
+- Live write verification now compares every returned action field against creation/update audit snapshots and creation replays, rather than checking only status, revision and the winning note. Created events must have a null before-state.
+- 139 local tests pass, including altered before-state identity, after-state business, creation notes and replay identity that previously escaped the narrower checks.
+- These are injected verifier tests, not live Supabase execution. No credentials, customer data, live migrations or preview transfers were used.

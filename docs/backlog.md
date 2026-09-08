@@ -217,3 +217,9 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Live read verification now requires the exact requested action ID and history action ID as well as the expected business. An unrelated record in the correct tenant can no longer count as positive fixture evidence.
 - 138 local tests pass, including wrong-record responses for both owners and the viewer. Existing empty-fixture, foreign-record and unavailable-table checks remain covered.
 - No live API calls or migrations were made. Customer persistence remains disabled until actual Supabase verification; preview unchanged.
+
+## Tenant action-page index — 8 September 2026
+
+- Replaced the business-only action index with `(business_id, id)` to match the adapter's tenant filter and ordered pagination. The leading business column still supports existing tenant-only lookups.
+- The migration changes no records, grants or row-level policies. Apply through the migration process before enabling a live workspace; normal index creation can hold write locks, so schedule appropriately for an existing populated service.
+- 138 local tests pass with all migrations loaded, including PostgreSQL tenant isolation and action concurrency contracts. No live migration or production performance benchmark was run.

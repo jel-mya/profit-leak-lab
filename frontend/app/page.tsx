@@ -269,6 +269,17 @@ export default function Home() {
   } | null>(null);
   const [currencyColumn, setCurrencyColumn] = useState('none');
   const [mapping, setMapping] = useState<Record<string, string>>({});
+  const hasSessionWork = actions.length > 0 || Object.keys(answers).length > 0 || !!title.trim()
+    || importHistory.length > 0 || busy || !!source || !!preview
+    || (mode !== 'Demo' && Object.values(data).some(rows => rows.length > 0));
+  useEffect(() => {
+    if (!hasSessionWork) return;
+    const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+    };
+    window.addEventListener('beforeunload', warnBeforeLeaving);
+    return () => window.removeEventListener('beforeunload', warnBeforeLeaving);
+  }, [hasSessionWork]);
   async function prepareMappedPreview() {
     if (!source) return;
     const generation = ++importGeneration.current;

@@ -297,3 +297,9 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Recovery forms now include a collapsible viewer of the latest five saved revisions, newest first, with before/after amounts, currency, recovery dates, evidence and device timestamps. Downloads still contain every revision.
 - The viewer reads saved snapshots, not unsaved form drafts, and reverses only a copied slice so display ordering cannot mutate audit entries. It does not verify claims or change action/financial state.
 - Recovery tests, application lint and production build passed. No browser interaction verification was performed. Previous recovery-history CI succeeded; preview transfer approval remains pending.
+
+## Accidental page-exit protection — 12 September 2026
+
+- The review requests the browser's native before-unload warning while there are actions, checklist answers, a new-action title, import metadata, loaded private records or a pending import. An untouched demo does not register the handler; it is removed when the session becomes empty or the page unmounts.
+- This adds no persistence. It is a best-effort exit warning, not crash recovery or a guarantee for app shutdown, mobile termination or in-app navigation. Continue downloading actions and retaining original export files.
+- Lint and production build passed; browser interaction was not tested and no automated browser warning claim is made. Previous history-viewer CI passed. Preview transfer approval remains pending.

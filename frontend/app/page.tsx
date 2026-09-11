@@ -41,6 +41,7 @@ import {
 } from '@/components/ui/pagination';
 import {
   reportingContext,
+  sourceReportingLabel,
   type ReportingContext,
 } from '../../core/reporting-context.mjs';
 import { pageWindow } from '../../core/pagination.mjs';
@@ -1030,6 +1031,9 @@ export default function Home() {
                         }).format(a.source.amountMinorUnits / 100)}{' '}
                         at tracking. This is a review amount, not confirmed loss
                         or recovery.
+                      </p>
+                      <p className="muted">
+                        {sourceReportingLabel(a.source, importHistory)}
                       </p>
                       <p className="muted">
                         Source: {a.source.section} ·{' '}

@@ -243,3 +243,9 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Applied reporting dates are shown in Import and retained in a session-only version ledger included in action JSON downloads. Source-linked actions already carry section/version identifiers, allowing lookup of their original reporting context. Clear-session/demo resets remove the ledger.
 - Preview date fields are stored on the preview itself: replacement/cancellation removes them with the preview, and new previews start blank. Invalid or reversed dates fail before replacing live records.
 - 141 local tests pass, including calendar validation and distinct snapshot/cumulative/period semantics. Browser interaction tests and live Supabase verification remain unrun. Preview publication still awaits the earlier source-transfer approval.
+
+## Original reporting context on actions — 11 September 2026
+
+- Source-linked action cards now show their original snapshot, cumulative-through or reporting-period dates and import version. Lookup matches section, version and currency, so later imports cannot replace the displayed historical context.
+- Missing context, including fictional demo actions, is explicitly labelled as not recorded. No dates are guessed and no action status or recovery amount changes.
+- 142 local tests pass, including reimport stability, cross-section/version/currency separation and missing metadata. No browser interaction or live Supabase verification was performed; preview transfer approval remains pending.

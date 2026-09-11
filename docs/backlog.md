@@ -236,3 +236,10 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Canonical GitHub delivery is working. Sites preview source transfer remains blocked by the earlier automatic approval review pending the user's response; do not retry without approval. The preview does not contain all canonical increments.
 - While these external gates remain unavailable, prioritise reporting context and exception lifecycle above. Add defensive fixes for concrete defects rather than repeatedly extending completed verification scaffolding.
 - This documentation-only increment reconciles the roadmap with delivered code. No new runtime verification is claimed.
+
+## Import reporting dates and version ledger — 11 September 2026
+
+- Import preview now requires an explicit balances-at date for debtors, cumulative-through date for jobs, or start/end period for payments and labour. No dates are inferred from records or filenames; mismatches with the review date warn without filtering or modifying amounts.
+- Applied reporting dates are shown in Import and retained in a session-only version ledger included in action JSON downloads. Source-linked actions already carry section/version identifiers, allowing lookup of their original reporting context. Clear-session/demo resets remove the ledger.
+- Preview date fields are stored on the preview itself: replacement/cancellation removes them with the preview, and new previews start blank. Invalid or reversed dates fail before replacing live records.
+- 141 local tests pass, including calendar validation and distinct snapshot/cumulative/period semantics. Browser interaction tests and live Supabase verification remain unrun. Preview publication still awaits the earlier source-transfer approval.

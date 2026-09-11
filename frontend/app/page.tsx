@@ -39,6 +39,10 @@ import {
   PaginationContent,
   PaginationItem,
 } from '@/components/ui/pagination';
+import {
+  reportingContext,
+  type ReportingContext,
+} from '../../core/reporting-context.mjs';
 import { pageWindow } from '../../core/pagination.mjs';
 import {
   actionSource,
@@ -204,6 +208,15 @@ export default function Home() {
     payments: 0,
     labour: 0,
   });
+  const [importHistory, setImportHistory] = useState<
+    Array<{
+      section: string;
+      version: number;
+      reporting: ReportingContext;
+      count: number;
+      currency: string;
+    }>
+  >([]);
   const [mode, setMode] = useState('Demo');
   const [asOf, setAsOf] = useState(demoDate);
   const [currency, setCurrency] = useState('AUD');
@@ -238,6 +251,8 @@ export default function Home() {
     section: string;
     rows: Record<string, string>[];
     currencyChecked: boolean;
+    start: string;
+    end: string;
   } | null>(null);
   const [source, setSource] = useState<{
     text: string;
@@ -267,6 +282,8 @@ export default function Home() {
         section: source.section,
         rows,
         currencyChecked: currencyColumn !== 'none',
+        start: '',
+        end: '',
       });
       setSource(null);
       setMapping({});
@@ -413,6 +430,11 @@ export default function Home() {
   function applyImport() {
     if (!preview) return;
     try {
+      const reporting = reportingContext(
+        preview.section,
+        preview.start,
+        preview.end,
+      );
       const next = applyCsvPreview(
         data,
         preview,
@@ -421,6 +443,16 @@ export default function Home() {
         target,
       );
       setData(next);
+      setImportHistory((old) => [
+        ...(mode === 'Demo' ? [] : old),
+        {
+          section: preview.section,
+          version: sourceVersions[preview.section] + 1,
+          reporting,
+          count: preview.rows.length,
+          currency,
+        },
+      ]);
       setSourceVersions((old) => ({
         ...old,
         [preview.section]: old[preview.section] + 1,
@@ -941,7 +973,11 @@ export default function Home() {
                   variant="outline"
                   onClick={() =>
                     download(
-                      JSON.stringify({ currency, asOf, actions }, null, 2),
+                      JSON.stringify(
+                        { currency, asOf, actions, importHistory },
+                        null,
+                        2,
+                      ),
                       'profitleaklab-actions.json',
                     )
                   }
@@ -1105,6 +1141,29 @@ export default function Home() {
                   Cancel CSV processing
                 </Button>
               )}
+              {importHistory.length > 0 && (
+                <section
+                  className="import-preview"
+                  aria-label="Loaded reporting dates"
+                >
+                  <h3>Loaded reporting dates</h3>
+                  {sections.map((key) => {
+                    const entry = importHistory.findLast(
+                      (item) => item.section === key,
+                    );
+                    return entry ? (
+                      <p key={key}>
+                        {key}: {entry.reporting.kind}{' '}
+                        {entry.reporting.start
+                          ? `${entry.reporting.start} to `
+                          : ''}
+                        {entry.reporting.end} · {entry.currency} · version{' '}
+                        {entry.version}
+                      </p>
+                    ) : null;
+                  })}
+                </section>
+              )}
               {source && (
                 <section className="import-preview" aria-label="Column mapping">
                   <h3>Match columns · {source.count} records</h3>
@@ -1235,6 +1294,45 @@ export default function Home() {
                       ? 'Currency column checked for every record.'
                       : 'No currency column was checked. Confirm that every record uses the selected review currency.'}
                   </p>
+                  <div className="mapping-grid">
+                    {['payments', 'labour'].includes(preview.section) && (
+                      <label>
+                        Reporting period start
+                        <Input
+                          type="date"
+                          value={preview.start}
+                          onChange={(e) =>
+                            setPreview({ ...preview, start: e.target.value })
+                          }
+                        />
+                      </label>
+                    )}
+                    <label>
+                      {preview.section === 'debtors'
+                        ? 'Balances at date'
+                        : preview.section === 'jobs'
+                          ? 'Cumulative job costs through'
+                          : 'Reporting period end'}
+                      <Input
+                        type="date"
+                        value={preview.end}
+                        onChange={(e) =>
+                          setPreview({ ...preview, end: e.target.value })
+                        }
+                      />
+                    </label>
+                  </div>
+                  <p className="muted">
+                    Enter dates from the source report. These describe its
+                    coverage; records are not filtered or adjusted.
+                  </p>
+                  {preview.end && preview.end !== asOf && (
+                    <p className="risk">
+                      The source date differs from the review date. Confirm this
+                      is intentional; balances and costs are not brought forward
+                      automatically.
+                    </p>
+                  )}
                   {preview.rows.length === 0 ? (
                     <p className="risk">
                       This file has headers only. Applying it clears this
@@ -1314,6 +1412,7 @@ export default function Home() {
                   variant="outline"
                   onClick={() => {
                     cancelImport();
+                    setImportHistory([]);
                     setData(empty);
                     setDataVersion((v) => v + 1);
                     setActions([]);
@@ -1328,6 +1427,7 @@ export default function Home() {
                   variant="outline"
                   onClick={() => {
                     cancelImport();
+                    setImportHistory([]);
                     setData(demo);
                     setDataVersion((v) => v + 1);
                     setActions([]);

@@ -28,3 +28,22 @@ test('tracked reporting dates stay linked to the original section, version and c
   assert.equal(sourceReportingLabel({ ...source, importVersion: 0 }, history), 'Original reporting dates not recorded.');
   assert.equal(sourceReportingLabel(source, []), 'Original reporting dates not recorded.');
 });
+
+test('reporting import validates records and metadata together without mutating live inputs', async () => {
+  const { prepareReportingImport } = await import('../core/reporting-context.mjs');
+  const data = { debtors: [{ id: 'old', customer: 'Synthetic', dueDate: '2026-09-01', outstanding: '10' }] };
+  const preview = { section: 'debtors', start: '', end: '2026-09-01', rows: [{ id: 'new', customer: 'Synthetic', dueDate: '2026-09-01', outstanding: '20' }] };
+  const before = structuredClone(data);
+  for (const invalid of [{ ...preview, end: '' }, { ...preview, rows: [{ ...preview.rows[0], outstanding: '-1' }] }]) {
+    assert.throws(() => prepareReportingImport(data, invalid, false, '2026-09-11', 25, 'AUD', 2));
+    assert.deepEqual(data, before);
+  }
+  const prepared = prepareReportingImport(data, preview, false, '2026-09-11', 25, 'AUD', 2);
+  assert.equal(prepared.entry.version, 2);
+  assert.equal(prepared.entry.reporting.end, '2026-09-01');
+  assert.equal(prepared.entry.count, 1);
+  prepared.data.debtors[0].id = 'changed';
+  assert.equal(preview.rows[0].id, 'new');
+  assert.deepEqual(data, before);
+  assert.throws(() => prepareReportingImport(data, preview, false, '2026-09-11', 25, 'AUD', Number.MAX_SAFE_INTEGER + 1));
+});

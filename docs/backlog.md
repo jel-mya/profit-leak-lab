@@ -255,3 +255,9 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Tracked action cards now compare original source IDs against the currently loaded section and report absent-record counts. IDs in other sections do not satisfy the match.
 - Presence does not assert unchanged values or exception conditions. Absence prompts review of export coverage/ID changes and never resolves an action or implies recovery. Original source evidence remains unchanged.
 - 143 local tests pass, covering full/partial/absent source sets, cross-section isolation and immutable tracking context. Browser interaction and live Supabase checks remain unrun; preview transfer approval remains pending.
+
+## Combined reporting import preparation — 11 September 2026
+
+- Moved record and reporting-metadata validation into one shared preparation function used by Apply. It returns replacement data and its matching ledger entry only after both validate; unsupported currency and unsafe version numbers are rejected.
+- 144 local tests pass, including invalid-date/amount rollback, detached replacement records and matching metadata/version/count. This tests the preparation boundary, not browser scheduling or interaction.
+- Previous source-presence CI completed successfully. Live Supabase verification and preview source-transfer approval remain outstanding.

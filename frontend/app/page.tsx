@@ -40,7 +40,7 @@ import {
   PaginationItem,
 } from '@/components/ui/pagination';
 import {
-  reportingContext,
+  prepareReportingImport,
   sourceReportingLabel,
   type ReportingContext,
 } from '../../core/reporting-context.mjs';
@@ -55,7 +55,7 @@ import { requireActionOutcome } from '../../core/action-outcome.mjs';
 import { reviewCurrency } from '../../core/review-currency.mjs';
 import { createCsvProcessor, type CsvProcessor } from '../../core/csv-task.mjs';
 import { demo, demoDate } from '../../core/demo.mjs';
-import { applyCsvPreview, template } from '../../core/csv.mjs';
+import { template } from '../../core/csv.mjs';
 import { useReviewTool } from '@/lib/use-review-tool';
 
 type Data = Record<string, Record<string, string | number>[]>;
@@ -432,29 +432,9 @@ export default function Home() {
   function applyImport() {
     if (!preview) return;
     try {
-      const reporting = reportingContext(
-        preview.section,
-        preview.start,
-        preview.end,
-      );
-      const next = applyCsvPreview(
-        data,
-        preview,
-        mode === 'Demo',
-        asOf,
-        target,
-      );
-      setData(next);
-      setImportHistory((old) => [
-        ...(mode === 'Demo' ? [] : old),
-        {
-          section: preview.section,
-          version: sourceVersions[preview.section] + 1,
-          reporting,
-          count: preview.rows.length,
-          currency,
-        },
-      ]);
+      const prepared = prepareReportingImport(data, preview, mode === 'Demo', asOf, target, currency, sourceVersions[preview.section] + 1);
+      setData(prepared.data);
+      setImportHistory(old => [...(mode === 'Demo' ? [] : old), prepared.entry]);
       setSourceVersions((old) => ({
         ...old,
         [preview.section]: old[preview.section] + 1,

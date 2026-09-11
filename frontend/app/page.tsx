@@ -50,6 +50,7 @@ import {
   sourceReviewStatus,
   sourcePresence,
   sourceIndex,
+  findingKeys,
   type ActionSource,
 } from '../../core/action-source.mjs';
 import { requireActionOutcome } from '../../core/action-outcome.mjs';
@@ -318,6 +319,7 @@ export default function Home() {
     () => analyse(data, asOf, target),
     [data, asOf, target],
   );
+  const currentFindings = useMemo(() => findingKeys(result), [result]);
   const health = controlHealth(answers);
   useReviewTool({
     currency,
@@ -1026,6 +1028,9 @@ export default function Home() {
                         }).format(a.source.amountMinorUnits / 100)}{' '}
                         at tracking. This is a review amount, not confirmed loss
                         or recovery.
+                      </p>
+                      <p className="muted">
+                        {currentFindings.has(a.source.key) ? 'The same source IDs still trigger an exception in the current review.' : 'No exact matching exception in the current review. Records, grouping or settings may have changed; this does not confirm resolution or recovery.'}
                       </p>
                       <p className="muted">
                         {sourcePresence(a.source, sourceIds)}

@@ -54,3 +54,13 @@ test('source indexes detach from input records and preserve section boundaries',
   assert.equal(index.jobs.size, 0);
   assert.equal(sourceIndex(data).payments.has('p2'), true);
 });
+
+test('current finding identities follow financial conditions without resolving tracked actions', async () => {
+  const { findingKeys } = await import('../core/action-source.mjs');
+  const keys = findingKeys({ jobs: [{ id: 'j1', shortfall: 0 }], debtors: [{ id: 'd1', days: 1, outstanding: 100 }, { id: 'd2', days: 0, outstanding: 100 }], labour: [{ id: 'l1', exposure: 0 }], duplicates: [{ paymentIds: ['p2', 'p1'] }] });
+  const source = (section, ids) => actionSource(section, ids, 100, 'AUD', '2026-09-01', 25, 1);
+  assert.equal(keys.has(source('debtors', ['d1']).key), true);
+  for (const [section, id] of [['jobs', 'j1'], ['debtors', 'd2'], ['labour', 'l1']]) assert.equal(keys.has(source(section, [id]).key), false);
+  assert.equal(keys.has(source('payments', ['p1', 'p2']).key), true);
+  assert.equal(keys.has(source('payments', ['p1', 'p2', 'p3']).key), false);
+});

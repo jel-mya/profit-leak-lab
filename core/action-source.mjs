@@ -21,3 +21,13 @@ export function sourcePresence(source, index) {
   if (missing) return `${missing} of ${source.recordIds.length} original source records are absent from the loaded section. Check export coverage and ID changes; absence does not confirm resolution or recovery.`;
   return 'All original source IDs are present. Values or exception conditions may have changed; review the current records.';
 }
+
+export function findingKeys(result) {
+  const keys = new Set();
+  const add = (section, ids) => keys.add(JSON.stringify([section, [...ids].sort()]));
+  result.jobs.filter(row => row.shortfall > 0).forEach(row => add('jobs', [row.id]));
+  result.debtors.filter(row => row.days > 0 && row.outstanding > 0).forEach(row => add('debtors', [row.id]));
+  result.labour.filter(row => row.exposure > 0).forEach(row => add('labour', [row.id]));
+  result.duplicates.forEach(row => add('payments', row.paymentIds));
+  return keys;
+}

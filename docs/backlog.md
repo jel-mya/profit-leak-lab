@@ -273,3 +273,9 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Source-presence checks now share per-section ID indexes memoised by the loaded dataset. Editing action notes or rendering multiple cards no longer rebuilds a full source-row set for every action.
 - 145 local tests pass, retaining missing/present semantics and verifying indexes detach from source objects and rebuild for changed records. This reduces repeated algorithmic work; no browser timing or performance benchmark is claimed.
 - The preceding download-format CI passed. Preview source-transfer approval and actual Supabase verification remain outstanding.
+
+## Current exception identity reconciliation — 11 September 2026
+
+- Tracked action cards now indicate whether their exact source identity still triggers a current job-margin, overdue-debtor, labour or duplicate-payment exception. Current finding keys are calculated once per analysis.
+- Duplicate groups require the same complete payment-ID set; changed groups are not silently treated as the original finding. No match explicitly warns about changed records/grouping/settings and never establishes resolution or recovery.
+- 146 local tests pass, covering inactive conditions, overdue boundaries and exact duplicate-group identity. Browser interaction and live Supabase checks remain unrun; preview source-transfer approval remains pending.

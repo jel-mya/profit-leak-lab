@@ -49,6 +49,7 @@ import {
   actionSource,
   sourceReviewStatus,
   sourcePresence,
+  sourceIndex,
   type ActionSource,
 } from '../../core/action-source.mjs';
 import { requireActionOutcome } from '../../core/action-outcome.mjs';
@@ -312,6 +313,7 @@ export default function Home() {
     setBusy(false);
     if (fileRef.current) fileRef.current.value = '';
   }
+  const sourceIds = useMemo(() => sourceIndex(data), [data]);
   const result = useMemo(
     () => analyse(data, asOf, target),
     [data, asOf, target],
@@ -1026,7 +1028,7 @@ export default function Home() {
                         or recovery.
                       </p>
                       <p className="muted">
-                        {sourcePresence(a.source, data)}
+                        {sourcePresence(a.source, sourceIds)}
                       </p>
                       <p className="muted">
                         {sourceReportingLabel(a.source, importHistory)}

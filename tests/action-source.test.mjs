@@ -34,12 +34,23 @@ test('invalid source identity or financial context is rejected', () => {
 });
 
 test('source presence distinguishes missing records without changing the tracked evidence', async () => {
-  const { sourcePresence } = await import('../core/action-source.mjs');
+  const { sourcePresence, sourceIndex } = await import('../core/action-source.mjs');
   const source = actionSource('payments', ['p1', 'p2'], 1000, 'AUD', '2026-09-01', 25, 1);
   const before = structuredClone(source);
-  assert.match(sourcePresence(source, { payments: [{ id: 'p2', amount: 0 }, { id: 'p1', amount: 0 }] }), /All original source IDs/);
-  assert.match(sourcePresence(source, { payments: [{ id: 'p1' }] }), /1 of 2 original/);
-  assert.match(sourcePresence(source, { jobs: [{ id: 'p1' }, { id: 'p2' }] }), /2 of 2 original/);
+  assert.match(sourcePresence(source, sourceIndex({ payments: [{ id: 'p2', amount: 0 }, { id: 'p1', amount: 0 }] })), /All original source IDs/);
+  assert.match(sourcePresence(source, sourceIndex({ payments: [{ id: 'p1' }] })), /1 of 2 original/);
+  assert.match(sourcePresence(source, sourceIndex({ jobs: [{ id: 'p1' }, { id: 'p2' }] })), /2 of 2 original/);
   assert.match(sourcePresence(source, {}), /absence does not confirm resolution or recovery/);
   assert.deepEqual(source, before);
+});
+
+test('source indexes detach from input records and preserve section boundaries', async () => {
+  const { sourceIndex } = await import('../core/action-source.mjs');
+  const data = { payments: [{ id: 'p1' }] };
+  const index = sourceIndex(data);
+  data.payments[0].id = 'p2';
+  assert.equal(index.payments.has('p1'), true);
+  assert.equal(index.payments.has('p2'), false);
+  assert.equal(index.jobs.size, 0);
+  assert.equal(sourceIndex(data).payments.has('p2'), true);
 });

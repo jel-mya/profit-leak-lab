@@ -267,3 +267,9 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Added a named versioned download format, export timestamp, demo/private mode, current target margin and explicit amount-unit/interpretation notes. Existing actions, currency, review date and import history remain present.
 - Documented legacy files, original versus current review settings and the device timestamp's limits in `docs/action-download.md`. No raw import rows are added and no restore capability is implied.
 - Application lint and production build passed. This additive export-label change does not alter financial calculations; no new unit tests were added.
+
+## Reuse source indexes across action cards — 11 September 2026
+
+- Source-presence checks now share per-section ID indexes memoised by the loaded dataset. Editing action notes or rendering multiple cards no longer rebuilds a full source-row set for every action.
+- 145 local tests pass, retaining missing/present semantics and verifying indexes detach from source objects and rebuild for changed records. This reduces repeated algorithmic work; no browser timing or performance benchmark is claimed.
+- The preceding download-format CI passed. Preview source-transfer approval and actual Supabase verification remain outstanding.

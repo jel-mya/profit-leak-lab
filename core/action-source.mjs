@@ -12,8 +12,11 @@ export function sourceReviewStatus(source, versions, currency, asOf, target) {
   return 'Linked to the current source review';
 }
 
-export function sourcePresence(source, data) {
-  const ids = new Set((data[source.section] ?? []).map(row => String(row.id)));
+export function sourceIndex(data) {
+  return Object.fromEntries(sections.map(section => [section, new Set((data[section] ?? []).map(row => String(row.id)))]));
+}
+export function sourcePresence(source, index) {
+  const ids = index[source.section] ?? new Set();
   const missing = source.recordIds.filter(id => !ids.has(id)).length;
   if (missing) return `${missing} of ${source.recordIds.length} original source records are absent from the loaded section. Check export coverage and ID changes; absence does not confirm resolution or recovery.`;
   return 'All original source IDs are present. Values or exception conditions may have changed; review the current records.';

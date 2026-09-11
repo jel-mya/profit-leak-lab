@@ -279,3 +279,9 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Tracked action cards now indicate whether their exact source identity still triggers a current job-margin, overdue-debtor, labour or duplicate-payment exception. Current finding keys are calculated once per analysis.
 - Duplicate groups require the same complete payment-ID set; changed groups are not silently treated as the original finding. No match explicitly warns about changed records/grouping/settings and never establishes resolution or recovery.
 - 146 local tests pass, covering inactive conditions, overdue boundaries and exact duplicate-group identity. Browser interaction and live Supabase checks remain unrun; preview source-transfer approval remains pending.
+
+## Separate user-reported recovery records — 11 September 2026
+
+- Session action cards now have an optional recovery form requiring an explicit amount, calendar date and evidence. Currency is retained from the existing recovery/source or current review for manual actions. Nothing is prefilled as a recovery amount.
+- Recovery records are labelled user-reported, included in action downloads and excluded from investigation calculations. Saving does not close an action. Entries are editable by replacement within the session; zero plus an explanation can correct a mistaken claim. This is not immutable recovery audit history or independent verification.
+- 147 local tests pass, including money precision, date/currency/evidence validation and zero correction. No live persistence or browser interaction verification; preview approval remains pending.

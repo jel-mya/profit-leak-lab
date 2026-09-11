@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { recoveryOutcome, type RecoveryOutcome } from '../../core/recovery-outcome.mjs';
 import {
   ArrowUpRight,
   ShieldCheck,
@@ -63,6 +64,7 @@ import { useReviewTool } from '@/lib/use-review-tool';
 type Data = Record<string, Record<string, string | number>[]>;
 type Action = {
   source?: ActionSource;
+  recovery?: RecoveryOutcome;
   id: string;
   title: string;
   owner: string;
@@ -968,7 +970,7 @@ export default function Home() {
                           currency,
                           asOf,
                           targetMargin: target,
-                          amountUnit: 'minor currency units for source.amountMinorUnits',
+                          amountUnit: 'minor currency units for source.amountMinorUnits and recovery.amountMinorUnits',
                           interpretation: 'Investigation amounts are not confirmed losses or recoveries. Action closure does not prove recovery.',
                           actions,
                           importHistory,
@@ -1099,6 +1101,24 @@ export default function Home() {
                       />
                     </label>
                   </div>
+                  <details className="action-source">
+                    <summary>User-reported recovery {a.recovery ? `· ${a.recovery.currency} ${(a.recovery.amountMinorUnits / 100).toFixed(2)}` : '· not recorded'}</summary>
+                    <p className="muted">Record only an amount supported by your evidence. This is not independently verified and does not reduce investigation totals or close the action. Saving replaces the recovery entry for this session; use zero with an explanation to correct a mistaken claim.</p>
+                    <form className="cloud-form" onSubmit={event => {
+                      event.preventDefault();
+                      const fields = new FormData(event.currentTarget);
+                      const field = (name: string) => { const value = fields.get(name); return typeof value === 'string' ? value : ''; };
+                      try {
+                        const recovery = recoveryOutcome(field('amount'), a.recovery?.currency ?? a.source?.currency ?? currency, field('date'), field('evidence'));
+                        updateAction(a.id, { recovery });
+                      } catch (error) { setMessage(error instanceof Error ? error.message : 'Check recovery details.'); }
+                    }}>
+                      <label>Recovery amount ({a.recovery?.currency ?? a.source?.currency ?? currency})<Input name="amount" inputMode="decimal" required defaultValue={a.recovery ? (a.recovery.amountMinorUnits / 100).toFixed(2) : ''} /></label>
+                      <label>Recovery date<Input name="date" type="date" required defaultValue={a.recovery?.date ?? ''} /></label>
+                      <label>Evidence reference or explanation<Input name="evidence" required maxLength={1000} defaultValue={a.recovery?.evidence ?? ''} /></label>
+                      <Button type="submit">Save recovery record</Button>
+                    </form>
+                  </details>
                 </article>
               ))}
             </section>

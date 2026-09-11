@@ -249,3 +249,9 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Source-linked action cards now show their original snapshot, cumulative-through or reporting-period dates and import version. Lookup matches section, version and currency, so later imports cannot replace the displayed historical context.
 - Missing context, including fictional demo actions, is explicitly labelled as not recorded. No dates are guessed and no action status or recovery amount changes.
 - 142 local tests pass, including reimport stability, cross-section/version/currency separation and missing metadata. No browser interaction or live Supabase verification was performed; preview transfer approval remains pending.
+
+## Source record presence after reimport — 11 September 2026
+
+- Tracked action cards now compare original source IDs against the currently loaded section and report absent-record counts. IDs in other sections do not satisfy the match.
+- Presence does not assert unchanged values or exception conditions. Absence prompts review of export coverage/ID changes and never resolves an action or implies recovery. Original source evidence remains unchanged.
+- 143 local tests pass, covering full/partial/absent source sets, cross-section isolation and immutable tracking context. Browser interaction and live Supabase checks remain unrun; preview transfer approval remains pending.

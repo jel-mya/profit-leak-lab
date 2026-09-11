@@ -11,3 +11,10 @@ export function sourceReviewStatus(source, versions, currency, asOf, target) {
   if (source.currency !== currency || source.asOf !== asOf || (source.section === 'jobs' && source.targetMargin !== target)) return 'Review settings changed — review again';
   return 'Linked to the current source review';
 }
+
+export function sourcePresence(source, data) {
+  const ids = new Set((data[source.section] ?? []).map(row => String(row.id)));
+  const missing = source.recordIds.filter(id => !ids.has(id)).length;
+  if (missing) return `${missing} of ${source.recordIds.length} original source records are absent from the loaded section. Check export coverage and ID changes; absence does not confirm resolution or recovery.`;
+  return 'All original source IDs are present. Values or exception conditions may have changed; review the current records.';
+}

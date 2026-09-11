@@ -48,6 +48,7 @@ import { pageWindow } from '../../core/pagination.mjs';
 import {
   actionSource,
   sourceReviewStatus,
+  sourcePresence,
   type ActionSource,
 } from '../../core/action-source.mjs';
 import { requireActionOutcome } from '../../core/action-outcome.mjs';
@@ -1031,6 +1032,9 @@ export default function Home() {
                         }).format(a.source.amountMinorUnits / 100)}{' '}
                         at tracking. This is a review amount, not confirmed loss
                         or recovery.
+                      </p>
+                      <p className="muted">
+                        {sourcePresence(a.source, data)}
                       </p>
                       <p className="muted">
                         {sourceReportingLabel(a.source, importHistory)}

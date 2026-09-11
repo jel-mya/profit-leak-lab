@@ -59,6 +59,14 @@ import {
 } from '../../core/action-source.mjs';
 import { requireActionOutcome } from '../../core/action-outcome.mjs';
 import { reviewCurrency } from '../../core/review-currency.mjs';
+import {
+  recoveryDraftChanged,
+  recoveryDraftForAction,
+  recoveryDraftSummary,
+  updateRecoveryDraft,
+  clearRecoveryDraft,
+  type RecoveryDraft,
+} from '../../core/recovery-draft.mjs';
 import { createCsvProcessor, type CsvProcessor } from '../../core/csv-task.mjs';
 import { demo, demoDate } from '../../core/demo.mjs';
 import { template } from '../../core/csv.mjs';
@@ -237,9 +245,11 @@ export default function Home() {
   const [busy, setBusy] = useState(false);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [actions, setActions] = useState<Action[]>([]);
+  const [recoveryDrafts, setRecoveryDrafts] = useState<Record<string, RecoveryDraft>>({});
   const [title, setTitle] = useState('');
   const [actionFilter, setActionFilter] = useState('All actions');
   const visibleActions = filterActions(actions, actionFilter, asOf);
+  const unsavedRecoveryDrafts = recoveryDraftSummary(actions, recoveryDrafts, currency);
   const fileRef = useRef<HTMLInputElement>(null);
   const importGeneration = useRef(createImportIdentity());
   const processorRef = useRef<CsvProcessor | null>(null);
@@ -278,6 +288,7 @@ export default function Home() {
   const [mapping, setMapping] = useState<Record<string, string>>({});
   const hasSessionWork = actions.length > 0 || Object.keys(answers).length > 0 || !!title.trim()
     || importHistory.length > 0 || busy || !!source || !!preview
+    || unsavedRecoveryDrafts.hasChanges
     || (mode !== 'Demo' && Object.values(data).some(rows => rows.length > 0));
   useEffect(() => {
     if (!hasSessionWork) return;
@@ -391,7 +402,7 @@ export default function Home() {
   }
   function updateAction(id: string, patch: Partial<Action>) {
     const current = actions.find((a) => a.id === id);
-    if (!current) return;
+    if (!current) return false;
     const next = { ...current, ...patch };
     try {
       requireActionOutcome(next.status, next.note);
@@ -402,10 +413,11 @@ export default function Home() {
           ? error.message
           : 'Add an outcome before closing this action.',
       );
-      return;
+      return false;
     }
     setActions((old) => old.map((a) => (a.id === id ? next : a)));
     setMessage('Action updated.');
+    return true;
   }
   function download(content: string, name: string) {
     const url = URL.createObjectURL(
@@ -475,6 +487,7 @@ export default function Home() {
       setMode('Private session');
       if (mode === 'Demo') {
         setActions([]);
+        setRecoveryDrafts({});
         setAnswers({});
       }
       setMessage(
@@ -1030,7 +1043,8 @@ export default function Home() {
               </form>
               <div className="settings">
                 <label>Show actions<Choice label="Action status filter" value={actionFilter} onChange={setActionFilter} items={['All actions', 'Unfinished', 'Closed', 'Overdue', 'Needs details']} /></label>
-                <p>{visibleActions.length} of {actions.length} actions shown. Overdue means unfinished and due before {asOf}. Needs details shows unfinished actions missing an owner or valid due date. Downloads include all actions. Save recovery edits before changing this filter.</p>
+                <p>{visibleActions.length} of {actions.length} actions shown. Overdue means unfinished and due before {asOf}. Needs details shows unfinished actions missing an owner or valid due date. Downloads include all saved actions. Unsaved recovery edits are preserved when you change views; save them before downloading or refreshing.</p>
+                {unsavedRecoveryDrafts.count > 0 && <p>{unsavedRecoveryDrafts.count} action recovery draft{unsavedRecoveryDrafts.count === 1 ? '' : 's'} not yet saved.</p>}
               </div>
               {actions.length > 0 && visibleActions.length === 0 && <p>No actions match this view. Choose All actions to see every saved follow-up.</p>}
               {!actions.length && (
@@ -1039,7 +1053,10 @@ export default function Home() {
                   above.
                 </p>
               )}
-              {visibleActions.map((a) => (
+              {visibleActions.map((a) => {
+                const recoveryDraft = recoveryDrafts[a.id] ?? recoveryDraftForAction(a, currency);
+                const recoveryDirty = recoveryDraftChanged(a, recoveryDraft, currency);
+                return (
                 <article className="action-card" key={a.id}>
                   <h3>{a.title}</h3>
                   {a.source && (
@@ -1138,17 +1155,16 @@ export default function Home() {
                     <p className="muted">Saved recovery revisions: {a.recoveryHistory?.length ?? 0}. Download actions before refreshing; this history is session-only and uses device timestamps.</p>
                     <form className="cloud-form" onSubmit={event => {
                       event.preventDefault();
-                      const fields = new FormData(event.currentTarget);
-                      const field = (name: string) => { const value = fields.get(name); return typeof value === 'string' ? value : ''; };
                       try {
-                        const recovery = recoveryOutcome(field('amount'), a.recovery?.currency ?? a.source?.currency ?? currency, field('date'), field('evidence'));
-                        updateAction(a.id, { recovery });
+                        const recovery = recoveryOutcome(recoveryDraft.amount, recoveryDraft.currency, recoveryDraft.date, recoveryDraft.evidence);
+                        if (updateAction(a.id, { recovery })) setRecoveryDrafts(old => clearRecoveryDraft(old, a.id));
                       } catch (error) { setMessage(error instanceof Error ? error.message : 'Check recovery details.'); }
                     }}>
-                      <label>Recovery amount ({a.recovery?.currency ?? a.source?.currency ?? currency})<Input name="amount" inputMode="decimal" required defaultValue={a.recovery ? (a.recovery.amountMinorUnits / 100).toFixed(2) : ''} /></label>
-                      <label>Recovery date<Input name="date" type="date" required defaultValue={a.recovery?.date ?? ''} /></label>
-                      <label>Evidence reference or explanation<Input name="evidence" required maxLength={1000} defaultValue={a.recovery?.evidence ?? ''} /></label>
+                      <label>Recovery amount ({recoveryDraft.currency})<Input name="amount" inputMode="decimal" required value={recoveryDraft.amount} onChange={event => { const value = event.target.value; setRecoveryDrafts(old => updateRecoveryDraft(old, a, currency, { amount: value })); }} /></label>
+                      <label>Recovery date<Input name="date" type="date" required value={recoveryDraft.date} onChange={event => { const value = event.target.value; setRecoveryDrafts(old => updateRecoveryDraft(old, a, currency, { date: value })); }} /></label>
+                      <label>Evidence reference or explanation<Input name="evidence" required maxLength={1000} value={recoveryDraft.evidence} onChange={event => { const value = event.target.value; setRecoveryDrafts(old => updateRecoveryDraft(old, a, currency, { evidence: value })); }} /></label>
                       <Button type="submit">Save recovery record</Button>
+                      {recoveryDirty && <Button type="button" variant="outline" onClick={() => setRecoveryDrafts(old => clearRecoveryDraft(old, a.id))}>Discard unsaved recovery edits</Button>}
                     </form>
                     {!!a.recoveryHistory?.length && <details className="history-review">
                       <summary>Review saved recovery changes</summary>
@@ -1163,7 +1179,8 @@ export default function Home() {
                     </details>}
                   </details>
                 </article>
-              ))}
+                );
+              })}
             </section>
           </TabsContent>
           <TabsContent value="import">
@@ -1494,6 +1511,7 @@ export default function Home() {
                     setData(empty);
                     setDataVersion((v) => v + 1);
                     setActions([]);
+                    setRecoveryDrafts({});
                     setAnswers({});
                     setMode('Private session');
                     setMessage('Session data and actions cleared.');
@@ -1509,6 +1527,7 @@ export default function Home() {
                     setData(demo);
                     setDataVersion((v) => v + 1);
                     setActions([]);
+                    setRecoveryDrafts({});
                     setAnswers({});
                     setAsOf(demoDate);
                     setMode('Demo');

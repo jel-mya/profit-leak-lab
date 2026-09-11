@@ -338,3 +338,9 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - GitHub CI now starts the built Worker in loopback-only local mode and runs the production route/security smoke after the unit suite, lint, build and emitted-worker checks.
 - Readiness polling is bounded, the step has a two-minute timeout and an exit trap stops the launcher. No Cloudflare account, deployment, credentials or live Supabase project is needed. Cloud workspace stays disabled for this check.
 - The HTTP script previously passed locally. The new Linux workflow execution is verified through its GitHub run after push; no browser interaction coverage is implied.
+
+## Validate membership responses before exposing access — 12 September 2026
+
+- Workspace connection now rejects non-array/null entries, missing business identities, unknown roles and duplicate business memberships before publishing selectable businesses. Failure clears the client identity/access state; empty membership arrays still permit onboarding.
+- 151 local tests pass, including conflicting duplicate roles and denied selection after malformed responses. This client check complements server RLS and does not verify actual Supabase behaviour.
+- No live configuration or migration changed. Preview source-transfer approval remains pending.

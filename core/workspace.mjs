@@ -45,6 +45,9 @@ export function createWorkspace(port) {
         const user = await port.verifyUser(); current(ticket);
         if (!user?.id || user.is_anonymous || !user.email_confirmed_at) throw new WorkspaceError('VERIFIED_SIGN_IN_REQUIRED');
         const memberships = await port.memberships(); current(ticket);
+        if (!Array.isArray(memberships)
+          || memberships.some(m => !m || typeof m.business_id !== 'string' || !m.business_id.trim() || !['owner', 'editor', 'viewer'].includes(m.role))
+          || new Set(memberships.map(m => m.business_id)).size !== memberships.length) throw new WorkspaceError('INVALID_RESPONSE');
         publish({ phase: 'chooseBusiness', userId: user.id, memberships, error: null });
       } catch (error) {
         if (ticket === generation) clear('signedOut', code(error));

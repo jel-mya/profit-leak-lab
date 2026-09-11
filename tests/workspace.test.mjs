@@ -371,3 +371,17 @@ test('adapter classifies empty successful responses as invalid rather than netwo
   const port = createSupabasePort({ auth: { getUser: async () => ({ data: null, error: null }) } });
   await assert.rejects(port.verifyUser(), e => e.code === 'INVALID_RESPONSE');
 });
+
+test('invalid membership payloads fail closed before publishing business access', async () => {
+  for (const memberships of [null, {}, [null], [{business_id: '', role: 'owner'}], [{business_id: 'a', role: 'admin'}], [{business_id: 'a', role: 'viewer'}, {business_id: 'a', role: 'owner'}]]) {
+    const { workspace } = setup({ memberships: async () => memberships });
+    await assert.rejects(workspace.connect(), e => e.code === 'INVALID_RESPONSE');
+    assert.equal(workspace.snapshot().phase, 'signedOut');
+    assert.equal(workspace.snapshot().userId, null);
+    assert.deepEqual(workspace.snapshot().memberships, []);
+    await assert.rejects(workspace.selectBusiness('a'), e => e.code === 'ACCESS_DENIED');
+  }
+  const { workspace } = setup({ memberships: async () => [] });
+  await workspace.connect();
+  assert.equal(workspace.snapshot().phase, 'chooseBusiness');
+});

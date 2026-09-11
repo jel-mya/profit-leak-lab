@@ -315,3 +315,8 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Added an Overdue action view using the explicitly displayed review date. Only Open/Investigating actions with valid due dates strictly before that date qualify; due-today, future, undated and closed actions are excluded.
 - All status views now share a tested filter without mutating actions. Invalid legacy due dates remain visible in All/Unfinished rather than being misclassified as overdue.
 - 149 local tests pass, including due-date boundaries, invalid dates, closed statuses and unchanged source records. No browser interaction or live Supabase verification; preview transfer approval remains pending.
+
+## Find incomplete follow-up assignments — 12 September 2026
+
+- Added Needs details to action triage: unfinished actions with blank owners, missing due dates or invalid dates remain discoverable even when they do not qualify as overdue. Closed actions are excluded.
+- 150 local tests pass, including whitespace-only owners, invalid dates and closed-action exclusion. Prior overdue-view CI passed. Browser interaction and live Supabase verification remain unrun; preview transfer approval remains pending.

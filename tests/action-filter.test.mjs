@@ -19,3 +19,14 @@ test('overdue follow-ups exclude due-today, future, undated and closed actions',
   assert.deepEqual(actions, before);
   assert.throws(() => filterActions(actions, 'missing', '2026-09-11'));
 });
+
+test('needs-details view exposes unfinished actions without an owner or valid due date', () => {
+  const actions = [
+    {id: 'complete', status: 'Open', owner: 'Synthetic owner', due: '2026-09-01'},
+    {id: 'owner', status: 'Investigating', owner: ' ', due: '2026-09-01'},
+    {id: 'date', status: 'Open', owner: 'Synthetic owner', due: ''},
+    {id: 'invalid', status: 'Open', owner: 'Synthetic owner', due: '2026-02-30'},
+    {id: 'closed', status: 'Resolved', owner: '', due: ''},
+  ];
+  assert.deepEqual(filterActions(actions, 'Needs details', '2026-09-12').map(a => a.id), ['owner', 'date', 'invalid']);
+});

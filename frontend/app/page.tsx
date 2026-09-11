@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { recoveryOutcome, type RecoveryOutcome } from '../../core/recovery-outcome.mjs';
+import { recoveryOutcome, recoveryRevision, type RecoveryOutcome, type RecoveryRevision } from '../../core/recovery-outcome.mjs';
 import {
   ArrowUpRight,
   ShieldCheck,
@@ -65,6 +65,7 @@ type Data = Record<string, Record<string, string | number>[]>;
 type Action = {
   source?: ActionSource;
   recovery?: RecoveryOutcome;
+  recoveryHistory?: RecoveryRevision[];
   id: string;
   title: string;
   owner: string;
@@ -370,6 +371,7 @@ export default function Home() {
     const next = { ...current, ...patch };
     try {
       requireActionOutcome(next.status, next.note);
+      if (patch.recovery) next.recoveryHistory = recoveryRevision(current.recoveryHistory ?? [], current.recovery, patch.recovery, new Date().toISOString());
     } catch (error) {
       setMessage(
         error instanceof Error
@@ -1103,7 +1105,8 @@ export default function Home() {
                   </div>
                   <details className="action-source">
                     <summary>User-reported recovery {a.recovery ? `· ${a.recovery.currency} ${(a.recovery.amountMinorUnits / 100).toFixed(2)}` : '· not recorded'}</summary>
-                    <p className="muted">Record only an amount supported by your evidence. This is not independently verified and does not reduce investigation totals or close the action. Saving replaces the recovery entry for this session; use zero with an explanation to correct a mistaken claim.</p>
+                    <p className="muted">Record only an amount supported by your evidence. This is not independently verified and does not reduce investigation totals or close the action. Corrections retain earlier entries in the session download; use zero with an explanation to correct a mistaken claim.</p>
+                    <p className="muted">Saved recovery revisions: {a.recoveryHistory?.length ?? 0}. Download actions before refreshing; this history is session-only and uses device timestamps.</p>
                     <form className="cloud-form" onSubmit={event => {
                       event.preventDefault();
                       const fields = new FormData(event.currentTarget);

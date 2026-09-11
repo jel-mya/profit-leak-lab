@@ -285,3 +285,9 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Session action cards now have an optional recovery form requiring an explicit amount, calendar date and evidence. Currency is retained from the existing recovery/source or current review for manual actions. Nothing is prefilled as a recovery amount.
 - Recovery records are labelled user-reported, included in action downloads and excluded from investigation calculations. Saving does not close an action. Entries are editable by replacement within the session; zero plus an explanation can correct a mistaken claim. This is not immutable recovery audit history or independent verification.
 - 147 local tests pass, including money precision, date/currency/evidence validation and zero correction. No live persistence or browser interaction verification; preview approval remains pending.
+
+## Recovery correction history — 11 September 2026
+
+- Session recovery edits now retain detached before/after snapshots, sequential revision numbers and device timestamps in action downloads. Unchanged saves do not add revisions; corrections to zero retain the earlier claim and its evidence.
+- Cards show saved revision counts and explicitly describe session-only retention. This is not server-enforced immutable history, verified evidence or cross-session persistence.
+- 148 local tests pass, including corrections, unchanged-save behaviour and protection against later object mutation. Prior recovery-feature CI passed. Live Supabase and preview transfer gates remain outstanding.

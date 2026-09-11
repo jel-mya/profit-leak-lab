@@ -41,3 +41,5 @@ Supabase SQL is in `supabase/migrations/`. It supplies tenant isolation and leas
 Prepare actual API verification with the [live Supabase checks](docs/live-supabase-checks.md).
 
 Read [strategy](config.md), [architecture/security](docs/architecture.md) and [delivery backlog](docs/backlog.md). Production customer-data storage is gated on live RLS verification, authentication, audit history and operational/privacy controls.
+
+For a local production HTTP smoke check, start the built Worker with `npm --prefix frontend run start -- --ip 127.0.0.1 --port 8791 --local`, then run `node scripts/check-local-http.mjs` in a second terminal. Use default disabled workspace configuration. The check covers HTTP security/hydration headers, not browser interaction or live Supabase.

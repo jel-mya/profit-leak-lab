@@ -326,3 +326,9 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Updated the next-work list to reflect delivered reporting dates, source reconciliation, recovery history and action triage. Live-data and cross-session requirements remain explicit gates.
 - Added a linked user workflow explaining report context, follow-up filters, recovery correction, download contents and session loss. No restore/sync or verified-recovery claims are made.
 - Documentation-only change; repository hygiene and diff checks passed. No runtime tests were rerun.
+
+## Local production HTTP verification — 12 September 2026
+
+- Added `node scripts/check-local-http.mjs` for an already-running local production Worker on 127.0.0.1:8791 (optional loopback URL argument). It refuses non-loopback targets and redirects, checks both page routes, fresh matching script nonces, no-store/frame/content-type headers and the default disabled workspace endpoint.
+- Ran against the built Worker with Wrangler local mode: passed. This validates actual HTTP responses, not browser rendering/interactions, live Supabase or hosted deployment. It deliberately fails if cloud workspace configuration is enabled.
+- No source transfer or deployment was attempted; preview approval remains pending. The helper is manual because CI does not currently start a production Worker server.

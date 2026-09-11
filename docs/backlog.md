@@ -309,3 +309,9 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Added All actions, Unfinished and Closed views with visible/total counts and a clear empty-filter message. Open/Investigating remain unfinished; Resolved/Dismissed appear under Closed without implying recovery.
 - Adding or locating a tracked action resets to All actions so the requested follow-up is visible. Downloads continue to include every action, including filtered-out entries. The UI asks users to save recovery drafts before switching views.
 - Application lint and production build passed. This presentation filter changes no stored actions or calculations; no new unit tests or browser interaction checks were added. Preview source transfer remains pending approval.
+
+## Overdue follow-up view — 12 September 2026
+
+- Added an Overdue action view using the explicitly displayed review date. Only Open/Investigating actions with valid due dates strictly before that date qualify; due-today, future, undated and closed actions are excluded.
+- All status views now share a tested filter without mutating actions. Invalid legacy due dates remain visible in All/Unfinished rather than being misclassified as overdue.
+- 149 local tests pass, including due-date boundaries, invalid dates, closed statuses and unchanged source records. No browser interaction or live Supabase verification; preview transfer approval remains pending.

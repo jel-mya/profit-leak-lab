@@ -235,6 +235,8 @@ export default function Home() {
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [actions, setActions] = useState<Action[]>([]);
   const [title, setTitle] = useState('');
+  const [actionFilter, setActionFilter] = useState('All actions');
+  const visibleActions = actions.filter(action => actionFilter === 'All actions' || (actionFilter === 'Unfinished' ? ['Open', 'Investigating'].includes(action.status) : ['Resolved', 'Dismissed'].includes(action.status)));
   const fileRef = useRef<HTMLInputElement>(null);
   const importGeneration = useRef(0);
   const processorRef = useRef<CsvProcessor | null>(null);
@@ -351,6 +353,7 @@ export default function Home() {
     value === null ? 'No revenue' : `${value.toFixed(1)}%`;
   function addAction(value: string, source?: ActionSource) {
     if (!value.trim()) return;
+    setActionFilter('All actions');
     if (
       actions.some((a) =>
         source ? a.source?.key === source.key : !a.source && a.title === value,
@@ -1015,13 +1018,18 @@ export default function Home() {
                 />
                 <Button type="submit">Add action</Button>
               </form>
+              <div className="settings">
+                <label>Show actions<Choice label="Action status filter" value={actionFilter} onChange={setActionFilter} items={['All actions', 'Unfinished', 'Closed']} /></label>
+                <p>{visibleActions.length} of {actions.length} actions shown. Downloads include all actions. Save recovery edits before changing this filter.</p>
+              </div>
+              {actions.length > 0 && visibleActions.length === 0 && <p>No actions match this view. Choose All actions to see every saved follow-up.</p>}
               {!actions.length && (
                 <p>
                   No actions yet. Track an exception from any control or add one
                   above.
                 </p>
               )}
-              {actions.map((a) => (
+              {visibleActions.map((a) => (
                 <article className="action-card" key={a.id}>
                   <h3>{a.title}</h3>
                   {a.source && (

@@ -303,3 +303,9 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - The review requests the browser's native before-unload warning while there are actions, checklist answers, a new-action title, import metadata, loaded private records or a pending import. An untouched demo does not register the handler; it is removed when the session becomes empty or the page unmounts.
 - This adds no persistence. It is a best-effort exit warning, not crash recovery or a guarantee for app shutdown, mobile termination or in-app navigation. Continue downloading actions and retaining original export files.
 - Lint and production build passed; browser interaction was not tested and no automated browser warning claim is made. Previous history-viewer CI passed. Preview transfer approval remains pending.
+
+## Action status triage — 12 September 2026
+
+- Added All actions, Unfinished and Closed views with visible/total counts and a clear empty-filter message. Open/Investigating remain unfinished; Resolved/Dismissed appear under Closed without implying recovery.
+- Adding or locating a tracked action resets to All actions so the requested follow-up is visible. Downloads continue to include every action, including filtered-out entries. The UI asks users to save recovery drafts before switching views.
+- Application lint and production build passed. This presentation filter changes no stored actions or calculations; no new unit tests or browser interaction checks were added. Preview source transfer remains pending approval.

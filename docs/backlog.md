@@ -291,3 +291,9 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Session recovery edits now retain detached before/after snapshots, sequential revision numbers and device timestamps in action downloads. Unchanged saves do not add revisions; corrections to zero retain the earlier claim and its evidence.
 - Cards show saved revision counts and explicitly describe session-only retention. This is not server-enforced immutable history, verified evidence or cross-session persistence.
 - 148 local tests pass, including corrections, unchanged-save behaviour and protection against later object mutation. Prior recovery-feature CI passed. Live Supabase and preview transfer gates remain outstanding.
+
+## Recovery history viewer — 12 September 2026
+
+- Recovery forms now include a collapsible viewer of the latest five saved revisions, newest first, with before/after amounts, currency, recovery dates, evidence and device timestamps. Downloads still contain every revision.
+- The viewer reads saved snapshots, not unsaved form drafts, and reverses only a copied slice so display ordering cannot mutate audit entries. It does not verify claims or change action/financial state.
+- Recovery tests, application lint and production build passed. No browser interaction verification was performed. Previous recovery-history CI succeeded; preview transfer approval remains pending.

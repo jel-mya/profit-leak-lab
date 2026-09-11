@@ -1121,6 +1121,17 @@ export default function Home() {
                       <label>Evidence reference or explanation<Input name="evidence" required maxLength={1000} defaultValue={a.recovery?.evidence ?? ''} /></label>
                       <Button type="submit">Save recovery record</Button>
                     </form>
+                    {!!a.recoveryHistory?.length && <details className="history-review">
+                      <summary>Review saved recovery changes</summary>
+                      <p className="muted">Latest five revisions, newest first. The action download contains every saved revision.</p>
+                      {a.recoveryHistory.slice(-5).reverse().map(entry => <div className="conflict-review" key={entry.revision}>
+                        <h4>Revision {entry.revision} · {entry.recordedAt} (device time)</h4>
+                        <dl className="history-fields">
+                          <div><dt>Before</dt><dd>{entry.before ? `${entry.before.currency} ${(entry.before.amountMinorUnits / 100).toFixed(2)} · recovery date ${entry.before.date} · ${entry.before.evidence}` : 'No recovery entry recorded.'}</dd></div>
+                          <div><dt>After</dt><dd>{entry.after.currency} {(entry.after.amountMinorUnits / 100).toFixed(2)} · recovery date {entry.after.date} · {entry.after.evidence}</dd></div>
+                        </dl>
+                      </div>)}
+                    </details>}
                   </details>
                 </article>
               ))}

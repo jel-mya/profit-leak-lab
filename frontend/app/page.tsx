@@ -956,7 +956,19 @@ export default function Home() {
                   onClick={() =>
                     download(
                       JSON.stringify(
-                        { currency, asOf, actions, importHistory },
+                        {
+                          format: 'profitleaklab-action-review',
+                          schemaVersion: 1,
+                          exportedAt: new Date().toISOString(),
+                          mode,
+                          currency,
+                          asOf,
+                          targetMargin: target,
+                          amountUnit: 'minor currency units for source.amountMinorUnits',
+                          interpretation: 'Investigation amounts are not confirmed losses or recoveries. Action closure does not prove recovery.',
+                          actions,
+                          importHistory,
+                        },
                         null,
                         2,
                       ),

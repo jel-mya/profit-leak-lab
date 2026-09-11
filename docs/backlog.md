@@ -261,3 +261,9 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Moved record and reporting-metadata validation into one shared preparation function used by Apply. It returns replacement data and its matching ledger entry only after both validate; unsupported currency and unsafe version numbers are rejected.
 - 144 local tests pass, including invalid-date/amount rollback, detached replacement records and matching metadata/version/count. This tests the preparation boundary, not browser scheduling or interaction.
 - Previous source-presence CI completed successfully. Live Supabase verification and preview source-transfer approval remain outstanding.
+
+## Self-describing action downloads — 11 September 2026
+
+- Added a named versioned download format, export timestamp, demo/private mode, current target margin and explicit amount-unit/interpretation notes. Existing actions, currency, review date and import history remain present.
+- Documented legacy files, original versus current review settings and the device timestamp's limits in `docs/action-download.md`. No raw import rows are added and no restore capability is implied.
+- Application lint and production build passed. This additive export-label change does not alter financial calculations; no new unit tests were added.

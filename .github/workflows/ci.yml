@@ -21,3 +21,24 @@ jobs:
       - run: npm --prefix frontend run lint
       - run: npm run build
       - run: node scripts/check-csv-worker.mjs
+      - name: Verify production HTTP security
+        working-directory: frontend
+        timeout-minutes: 2
+        env:
+          WRANGLER_SEND_METRICS: 'false'
+          CLOUD_WORKSPACE_ENABLED: 'false'
+        run: |
+          node node_modules/wrangler/bin/wrangler.js dev --config dist/server/wrangler.json --ip 127.0.0.1 --port 8791 --local > "$RUNNER_TEMP/profitleaklab-worker.log" 2>&1 &
+          worker_pid=$!
+          trap 'kill "$worker_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --max-time 2 --output /dev/null http://127.0.0.1:8791/; then
+              break
+            fi
+            if ! kill -0 "$worker_pid" 2>/dev/null; then
+              echo 'Local production Worker stopped before readiness.'
+              exit 1
+            fi
+            sleep 1
+          done
+          node ../scripts/check-local-http.mjs

@@ -332,3 +332,9 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Added `node scripts/check-local-http.mjs` for an already-running local production Worker on 127.0.0.1:8791 (optional loopback URL argument). It refuses non-loopback targets and redirects, checks both page routes, fresh matching script nonces, no-store/frame/content-type headers and the default disabled workspace endpoint.
 - Ran against the built Worker with Wrangler local mode: passed. This validates actual HTTP responses, not browser rendering/interactions, live Supabase or hosted deployment. It deliberately fails if cloud workspace configuration is enabled.
 - No source transfer or deployment was attempted; preview approval remains pending. The helper is manual because CI does not currently start a production Worker server.
+
+## Production HTTP checks in CI — 12 September 2026
+
+- GitHub CI now starts the built Worker in loopback-only local mode and runs the production route/security smoke after the unit suite, lint, build and emitted-worker checks.
+- Readiness polling is bounded, the step has a two-minute timeout and an exit trap stops the launcher. No Cloudflare account, deployment, credentials or live Supabase project is needed. Cloud workspace stays disabled for this check.
+- The HTTP script previously passed locally. The new Linux workflow execution is verified through its GitHub run after push; no browser interaction coverage is implied.

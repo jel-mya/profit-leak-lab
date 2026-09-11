@@ -30,6 +30,8 @@ Under **Import**, download the appropriate blank CSV template and choose jobs, d
 
 CSV file inspection and column mapping run in a cancellable background worker. Applying a preview still validates and calculates the complete review in the main interface. Data is processed in browser memory and not uploaded or persisted. Refreshing clears imports, checklist answers and actions. Downloads stay on your device and may contain sensitive information; they never belong in Git. The separate `/workspace` route supports an opt-in authenticated action workspace. It is disabled by default; no live accounting connectors, billing or payment actions are enabled.
 
+For action filters, recovery corrections and session-retention limits, follow the [session review guide](docs/session-review.md).
+
 ## Deploy and persistence
 
 Cloudflare-compatible Worker build: deploy `frontend/dist/server/wrangler.json` with Wrangler after configuring your own approved Cloudflare project. Do not deploy the development server. The optional Sites preview uses the non-secret project metadata in `frontend/.openai/hosting.json`; GitHub remains canonical. Hosting source mirrors must contain the exact canonical commit and must not become a second development codebase.

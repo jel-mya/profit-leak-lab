@@ -9,8 +9,8 @@
 
 ## Highest-value next work
 1. Persist actions safely: local SQL isolation, revision-checked updates, client-immutable history and starter-business onboarding now pass tests. Opt-in Supabase Auth and UI onboarding/conflict handling are implemented and disabled by default. Repeat isolation/concurrency cases through the actual Supabase API before collecting real customer data.
-2. Import reporting context: preview, explicit column mapping, optional currency-column checks, cancellable worker parsing and table pagination are implemented. Next capture source reporting dates explicitly and carry them through preview, applied data and action downloads. Do not infer periods from debtor due dates or filenames. Distinguish debtor snapshots, transaction periods and cumulative job costs; explain mismatches without silently filtering records. Verify cancellation/replacement cannot attach old metadata to new records.
-3. Source-linked exception lifecycle: session source IDs, original review context, reimport/settings warnings and required closure notes are implemented. Next retain import-version metadata and reconcile findings across imports without auto-closing them. Recovered money remains separate, requiring an explicit amount, currency, date and evidence; never infer recovery from disappearance or closure.
+2. Import reporting context is implemented: mapping, preview, explicit snapshot/cumulative/period dates, currency checks, worker parsing, pagination and version metadata in downloads. Remaining: end-to-end browser verification when authorised and cross-session source-version persistence after the live-data gate. Do not infer periods or silently filter mismatched reports.
+3. Session exception lifecycle is implemented: source presence/current-finding reconciliation, original reporting context, closure notes, user-reported recovery records and correction history, plus status/overdue/incomplete-detail triage. Remaining: server-enforced recovery history and cross-session reconciliation after live Supabase verification. No recovery is inferred from closure or disappearance.
 4. Add retention and unusual-payment controls from the strategy; validate domain calculations with anonymised synthetic fixtures.
 5. Free Trade Money Check and original symptom-led acquisition pages; no indexed customer dashboard pages.
 6. Billing only after the user handles protected credentials/terms and pricing validation. No spending automatically.
@@ -320,3 +320,9 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 
 - Added Needs details to action triage: unfinished actions with blank owners, missing due dates or invalid dates remain discoverable even when they do not qualify as overdue. Closed actions are excluded.
 - 150 local tests pass, including whitespace-only owners, invalid dates and closed-action exclusion. Prior overdue-view CI passed. Browser interaction and live Supabase verification remain unrun; preview transfer approval remains pending.
+
+## Reconcile session workflow documentation — 12 September 2026
+
+- Updated the next-work list to reflect delivered reporting dates, source reconciliation, recovery history and action triage. Live-data and cross-session requirements remain explicit gates.
+- Added a linked user workflow explaining report context, follow-up filters, recovery correction, download contents and session loss. No restore/sync or verified-recovery claims are made.
+- Documentation-only change; repository hygiene and diff checks passed. No runtime tests were rerun.

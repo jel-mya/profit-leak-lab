@@ -344,3 +344,11 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Workspace connection now rejects non-array/null entries, missing business identities, unknown roles and duplicate business memberships before publishing selectable businesses. Failure clears the client identity/access state; empty membership arrays still permit onboarding.
 - 151 local tests pass, including conflicting duplicate roles and denied selection after malformed responses. This client check complements server RLS and does not verify actual Supabase behaviour.
 - No live configuration or migration changed. Preview source-transfer approval remains pending.
+
+## Import reporting context and cancellation isolation - 12 September 2026
+
+- Extended the existing required source-date capture with optional source report context (500 characters), displayed in staged preview, loaded reporting labels and original tracked-action labels. Applied import history retains this context and includes it in action JSON downloads.
+- Preview guidance explicitly separates debtor snapshots, payment/labour transaction periods and cumulative job costs. Dates are entered from the report, never inferred from filenames or debtor due dates.
+- Added a shared import identity guard for asynchronous completion, Apply and queued reporting edits. Cancellation/replacement invalidates old identities; new previews start with blank dates/context.
+- Checks run: focused reporting/CSV tests (14 passed), full local suite (154 passed), frontend lint and local production build passed. Focused tests cover stale identity/metadata edits, worker cancellation/replacement and context retention through applied history/JSON serialization. Initial test/lint failures were fixed before successful reruns. These are unit/build checks, not browser interaction coverage.
+- No live Supabase checks, HTTP smoke, preview publishing or deployment run. Cloud configuration remains disabled and unchanged.

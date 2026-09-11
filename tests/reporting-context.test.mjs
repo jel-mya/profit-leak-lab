@@ -47,3 +47,41 @@ test('reporting import validates records and metadata together without mutating 
   assert.deepEqual(data, before);
   assert.throws(() => prepareReportingImport(data, preview, false, '2026-09-11', 25, 'AUD', Number.MAX_SAFE_INTEGER + 1));
 });
+
+test('source context is validated and preserved in applied history and action JSON', async () => {
+  const { prepareReportingImport, sourceReportingLabel } = await import('../core/reporting-context.mjs');
+  const preview = { section: 'jobs', start: '', end: '2026-08-31', context: '  All branches, cumulative since job start  ', rows: [] };
+  const prepared = prepareReportingImport({}, preview, false, '2026-09-12', 25, 'AUD', 1);
+  preview.context = 'Changed draft';
+  const downloaded = JSON.parse(JSON.stringify({ importHistory: [prepared.entry] }));
+  assert.equal(downloaded.importHistory[0].reporting.context, 'All branches, cumulative since job start');
+  assert.equal(sourceReportingLabel({ section: 'jobs', importVersion: 1, currency: 'AUD' }, downloaded.importHistory), 'Cumulative costs through 2026-08-31 · All branches, cumulative since job start · import version 1');
+  assert.throws(() => reportingContext('jobs', '', '2026-08-31', 'x'.repeat(501)));
+  assert.throws(() => reportingContext('jobs', '', '2026-08-31', {}));
+});
+
+test('cancelled import identity cannot publish or edit staged reporting metadata', async () => {
+  const { createImportIdentity } = await import('../core/reporting-context.mjs');
+  const identity = createImportIdentity();
+  const generation = identity.next();
+  const old = { generation, start: '', end: '2026-08-31', context: 'Old snapshot' };
+  identity.next(); // Same invalidation used by Cancel, section change and unmount.
+  assert.equal(identity.isCurrent(generation), false);
+  assert.equal(identity.edit(null, generation, old), null);
+  assert.equal(identity.edit(old, generation, { end: '2026-09-01' }), old);
+});
+
+test('replacement import ignores stale completions and queued metadata edits', async () => {
+  const { createImportIdentity } = await import('../core/reporting-context.mjs');
+  const identity = createImportIdentity();
+  const first = identity.next();
+  const old = { generation: first, end: '2026-08-31', context: 'Old report' };
+  const second = identity.next();
+  const replacement = { generation: second, end: '', context: '' };
+  assert.equal(identity.isCurrent(first), false);
+  assert.equal(identity.isCurrent(second), true);
+  assert.equal(identity.edit(replacement, first, old), replacement);
+  assert.equal(identity.edit(old, second, { context: 'Wrong preview' }), old);
+  assert.deepEqual(identity.edit(replacement, second, { end: '2026-09-10', context: 'New report' }), { generation: second, end: '2026-09-10', context: 'New report' });
+  assert.deepEqual(replacement, { generation: second, end: '', context: '' });
+});

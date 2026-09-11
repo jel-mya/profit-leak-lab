@@ -43,6 +43,8 @@ import {
 } from '@/components/ui/pagination';
 import {
   prepareReportingImport,
+  reportingLabel,
+  createImportIdentity,
   sourceReportingLabel,
   type ReportingContext,
 } from '../../core/reporting-context.mjs';
@@ -239,7 +241,7 @@ export default function Home() {
   const [actionFilter, setActionFilter] = useState('All actions');
   const visibleActions = filterActions(actions, actionFilter, asOf);
   const fileRef = useRef<HTMLInputElement>(null);
-  const importGeneration = useRef(0);
+  const importGeneration = useRef(createImportIdentity());
   const processorRef = useRef<CsvProcessor | null>(null);
   function processor() {
     processorRef.current ??= createCsvProcessor(
@@ -252,7 +254,7 @@ export default function Home() {
   }
   useEffect(
     () => () => {
-      importGeneration.current++;
+      importGeneration.current.next();
       processorRef.current?.cancel();
     },
     [],
@@ -261,6 +263,8 @@ export default function Home() {
     section: string;
     rows: Record<string, string>[];
     currencyChecked: boolean;
+    generation: number;
+    context: string;
     start: string;
     end: string;
   } | null>(null);
@@ -285,7 +289,7 @@ export default function Home() {
   }, [hasSessionWork]);
   async function prepareMappedPreview() {
     if (!source) return;
-    const generation = ++importGeneration.current;
+    const generation = importGeneration.current.next();
     setBusy(true);
     try {
       const { rows } = await processor().run({
@@ -298,10 +302,12 @@ export default function Home() {
             ? undefined
             : { column: source.header[Number(currencyColumn)], currency },
       });
-      if (generation !== importGeneration.current) return;
+      if (!importGeneration.current.isCurrent(generation)) return;
       setPreview({
         section: source.section,
         rows,
+        generation,
+        context: '',
         currencyChecked: currencyColumn !== 'none',
         start: '',
         end: '',
@@ -313,19 +319,22 @@ export default function Home() {
         'Mapped records validated. Review the sample, then apply the import.',
       );
     } catch (error) {
-      if (generation === importGeneration.current)
+      if (importGeneration.current.isCurrent(generation))
         setMessage(
           error instanceof Error ? error.message : 'Check the column mapping.',
         );
     } finally {
-      if (generation === importGeneration.current) setBusy(false);
+      if (importGeneration.current.isCurrent(generation)) setBusy(false);
     }
+  }
+  function editReporting(generation: number, field: 'start' | 'end' | 'context', value: string) {
+    setPreview(current => importGeneration.current.edit(current, generation, { [field]: value }));
   }
   function cancelImport() {
     setSource(null);
     setMapping({});
     setCurrencyColumn('none');
-    importGeneration.current++;
+    importGeneration.current.next();
     processorRef.current?.cancel();
     setPreview(null);
     setBusy(false);
@@ -410,7 +419,7 @@ export default function Home() {
   }
   async function importFile(file?: File) {
     if (!file) return;
-    const generation = ++importGeneration.current;
+    const generation = importGeneration.current.next();
     const selectedSection = section;
     setPreview(null);
     setSource(null);
@@ -420,7 +429,7 @@ export default function Home() {
     try {
       if (file.size > 2 * 1024 * 1024) throw new Error('CSV exceeds 2 MB.');
       const inspected = await processor().run({ type: 'inspect', file });
-      if (generation !== importGeneration.current) return;
+      if (!importGeneration.current.isCurrent(generation)) return;
       setSource({
         text: inspected.text,
         header: inspected.header,
@@ -439,21 +448,21 @@ export default function Home() {
         'Match each required field to a column in your file. Current records have not changed.',
       );
     } catch (error) {
-      if (generation === importGeneration.current)
+      if (importGeneration.current.isCurrent(generation))
         setMessage(
           error instanceof Error
             ? error.message
             : 'Import failed. Previous data retained.',
         );
     } finally {
-      if (generation === importGeneration.current) {
+      if (importGeneration.current.isCurrent(generation)) {
         setBusy(false);
         if (fileRef.current) fileRef.current.value = '';
       }
     }
   }
   function applyImport() {
-    if (!preview) return;
+    if (!preview || !importGeneration.current.isCurrent(preview.generation)) return;
     try {
       const prepared = prepareReportingImport(data, preview, mode === 'Demo', asOf, target, currency, sourceVersions[preview.section] + 1);
       setData(prepared.data);
@@ -1214,11 +1223,7 @@ export default function Home() {
                     );
                     return entry ? (
                       <p key={key}>
-                        {key}: {entry.reporting.kind}{' '}
-                        {entry.reporting.start
-                          ? `${entry.reporting.start} to `
-                          : ''}
-                        {entry.reporting.end} · {entry.currency} · version{' '}
+                        {key}: {reportingLabel(entry.reporting)} · {entry.currency} · version{' '}
                         {entry.version}
                       </p>
                     ) : null;
@@ -1355,6 +1360,9 @@ export default function Home() {
                       ? 'Currency column checked for every record.'
                       : 'No currency column was checked. Confirm that every record uses the selected review currency.'}
                   </p>
+                  <p>
+                    {preview.section === 'debtors' ? 'Debtor snapshot: outstanding balances at a single source date; due dates only determine ageing.' : preview.section === 'jobs' ? 'Cumulative job costs: totals through the source date, not costs incurred only within a transaction period.' : 'Transaction period: the source report covers the explicit start and end dates below.'}
+                  </p>
                   <div className="mapping-grid">
                     {['payments', 'labour'].includes(preview.section) && (
                       <label>
@@ -1363,7 +1371,7 @@ export default function Home() {
                           type="date"
                           value={preview.start}
                           onChange={(e) =>
-                            setPreview({ ...preview, start: e.target.value })
+                            editReporting(preview.generation, 'start', e.target.value)
                           }
                         />
                       </label>
@@ -1378,15 +1386,24 @@ export default function Home() {
                         type="date"
                         value={preview.end}
                         onChange={(e) =>
-                          setPreview({ ...preview, end: e.target.value })
+                          editReporting(preview.generation, 'end', e.target.value)
                         }
                       />
                     </label>
                   </div>
                   <p className="muted">
                     Enter dates from the source report. These describe its
-                    coverage; records are not filtered or adjusted.
+                    coverage; records are not filtered or adjusted. Dates are never inferred from filenames or debtor due dates.
                   </p>
+                  <label>
+                    Source report context (optional, 500 characters)
+                    <Input
+                      value={preview.context}
+                      maxLength={500}
+                      placeholder="For example: month-end ledger, all branches, excluding tax"
+                      onChange={(e) => editReporting(preview.generation, 'context', e.target.value)}
+                    />
+                  </label>
                   {preview.end && preview.end !== asOf && (
                     <p className="risk">
                       The source date differs from the review date. Confirm this

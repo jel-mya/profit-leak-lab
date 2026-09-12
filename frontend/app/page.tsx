@@ -377,7 +377,7 @@ export default function Home() {
     setActionFilter('All actions');
     if (
       actions.some((a) =>
-        source ? a.source?.key === source.key : !a.source && a.title === value,
+        source ? a.source?.key === source.key : !a.source && a.title === value.trim(),
       )
     ) {
       setMessage('This item is already in your action list.');

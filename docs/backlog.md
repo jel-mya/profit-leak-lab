@@ -361,3 +361,9 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Checks actually run: run101 focused Node tests 17/17; full canonical Node suite 171/171; frontend lint passed; production build passed. Browser smoke used synthetic actions at localhost:3000 in the Codex in-app browser: all five filters, complete amount/date/evidence retention after unmount, hidden dirty count, independent second draft, successful Save/revision, rejected negative Save, Discard to saved values and demo restore passed. Investigation exposure remained $11,450.00.
 - Clicked Download actions while two unsaved drafts existed and inspected the downloaded JSON: only the saved 1,250 minor-unit recovery and its one revision were included; unsaved edits and the second draft were excluded. Browser date automation required a native key change after fill. Reload was attempted with hidden drafts and retained the session, but the browser API exposed no native dialog; visual verification of the beforeunload prompt is not claimed.
 - No hosted preview, deployment, live Supabase operation or cloud configuration change. Drafts are not persisted, exported, sent to telemetry or counted as verified recovery. Browser smoke is not an automated browser regression suite.
+
+## Manual-action duplicate comparison — 12 September 2026
+
+- Manual action duplicate checks now compare the trimmed input used for storage. Adding an existing title with leading/trailing spaces no longer creates a second follow-up. Source-linked identity matching is unchanged.
+- Application lint and production build passed. This one-line comparison fix adds no new runtime dependency or unit test; the newer committed recovery-draft continuity work is preserved.
+- No browser interaction, hosted deployment or live Supabase operation was performed in this increment.

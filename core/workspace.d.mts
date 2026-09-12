@@ -3,7 +3,7 @@ export type Draft = { title: string; owner_label: string; due_date: string | nul
 export type RecoveryInput = { amountMinorUnits: number; currency: string; date: string; evidence: string };
 export type Action = Draft & { recovery_amount?: number | string | null; recovery_currency?: string | null; recovery_date?: string | null; recovery_evidence?: string | null; id: string; business_id: string; revision: number | string };
 export type Membership = { business_id: string; role: string; businesses?: { name: string; currency: string } | null };
-export type State = { creation: null | { businessId: string; requestId: string; draft: Draft }; history: null | { actionId: string; rows: ActionEvent[]; hasMore: boolean }; phase: string; userId: string | null; memberships: Membership[]; businessId: string | null; actions: Action[]; hasMore: boolean; offset: number; conflict: null | { id: string; revision: number | string; draft: Draft; current?: Action }; error: string | null };
+export type State = { recoveryReview: null | { id: string; revision: number | string; input: RecoveryInput; current?: Action }; creation: null | { businessId: string; requestId: string; draft: Draft }; history: null | { actionId: string; rows: ActionEvent[]; hasMore: boolean }; phase: string; userId: string | null; memberships: Membership[]; businessId: string | null; actions: Action[]; hasMore: boolean; offset: number; conflict: null | { id: string; revision: number | string; draft: Draft; current?: Action }; error: string | null };
 export interface WorkspacePort {
   verifyUser(): Promise<{ id: string; email_confirmed_at?: string; is_anonymous?: boolean } | null>;
   memberships(): Promise<Membership[]>;
@@ -23,6 +23,9 @@ export interface Workspace {
   selectBusiness(id: string, offset?: number): Promise<void>;
   loadHistory(id: string, before?: string | number | null): Promise<void>;
   closeHistory(): void;
+  recordRecovery(id: string, input: RecoveryInput): Promise<Action>;
+  reloadRecoveryReview(): Promise<void>;
+  finishRecoveryReview(): void;
   save(id: string, draft: Draft): Promise<Action>;
   reloadConflict(): Promise<void>;
   resolveConflict(draft: Draft): Promise<Action>;

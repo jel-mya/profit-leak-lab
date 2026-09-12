@@ -380,3 +380,9 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Added the typed Supabase recovery RPC adapter and recovery fields to action reads. Payloads whitelist recovery inputs and expected revision; server message details remain excluded from client errors.
 - 176 local tests pass, including exact RPC payload isolation and stale-revision error preservation. Controller/UI integration and real Supabase verification remain unfinished; no live migration or cloud configuration change.
 - The updated connected port requires the recovery migration before use. Session-only recovery remains separate and is never automatically uploaded.
+
+## Recovery write coordination — 12 September 2026
+
+- Added controller recovery validation, business-currency checks, revision-based writes and write serialization. Access loss clears cached data and late responses cannot restore a signed-out session.
+- Conflicting or uncertain writes retain attempted values in a separate recovery-review state. Fresh reads and explicit acknowledgement are required; neither step automatically repeats a write. Failed rereads invalidate previously fetched review data.
+- Added six controller tests covering payload isolation, validation/roles, concurrent-call exclusion, uncertain/conflict reconciliation, stale sign-out responses, access loss and failed rereads. UI integration and live Supabase checks remain the next gates; cloud configuration and preview publishing remain disabled.

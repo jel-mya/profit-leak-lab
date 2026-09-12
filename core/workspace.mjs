@@ -22,14 +22,21 @@ function draftFields(draft) {
   try { requireActionOutcome(values.status, values.note); } catch { throw new WorkspaceError('OUTCOME_REQUIRED'); }
   return values;
 }
+function recoveryFields(input) {
+  if (!input || !Number.isSafeInteger(input.amountMinorUnits) || input.amountMinorUnits < 0
+    || input.amountMinorUnits > 100000000000 || !['AUD', 'USD', 'GBP', 'CAD', 'NZD'].includes(input.currency)
+    || typeof input.evidence !== 'string' || !input.evidence.trim() || input.evidence.length > 1000) throw new WorkspaceError('INVALID_RECOVERY');
+  try { dateValue(input.date); } catch { throw new WorkspaceError('INVALID_RECOVERY'); }
+  return { amountMinorUnits: input.amountMinorUnits, currency: input.currency, date: input.date, evidence: input.evidence.trim() };
+}
 export function createWorkspace(port) {
   let generation = 0;
-  let state = { phase: 'signedOut', userId: null, memberships: [], businessId: null, actions: [], hasMore: false, offset: 0, conflict: null, history: null, creation: null, error: null };
+  let state = { phase: 'signedOut', userId: null, memberships: [], businessId: null, actions: [], hasMore: false, offset: 0, conflict: null, recoveryReview: null, history: null, creation: null, error: null };
   const listeners = new Set();
   function publish(patch) { state = { ...state, ...patch }; for (const listener of listeners) listener(structuredClone(state)); }
   function clear(phase = 'signedOut', error = null) {
     generation++;
-    publish({ phase, userId: null, memberships: [], businessId: null, actions: [], hasMore: false, offset: 0, conflict: null, history: null, creation: null, error });
+    publish({ phase, userId: null, memberships: [], businessId: null, actions: [], hasMore: false, offset: 0, conflict: null, recoveryReview: null, history: null, creation: null, error });
   }
   function current(ticket) { if (ticket !== generation) throw new WorkspaceError('STALE_REQUEST'); }
   function code(error) { return error?.code ?? 'REQUEST_FAILED'; }
@@ -58,7 +65,7 @@ export function createWorkspace(port) {
       if (!Number.isSafeInteger(offset) || offset < 0) throw new WorkspaceError('INVALID_PAGE');
       if (!state.userId || !state.memberships.some(m => m.business_id === id)) throw new WorkspaceError('ACCESS_DENIED');
       const ticket = ++generation;
-      publish({ phase: 'loading', creation: state.creation?.businessId === id ? state.creation : null, businessId: id, actions: [], hasMore: false, conflict: null, history: null, error: null });
+      publish({ phase: 'loading', creation: state.creation?.businessId === id ? state.creation : null, businessId: id, actions: [], hasMore: false, conflict: null, recoveryReview: null, history: null, error: null });
       try {
         const result = await port.actions(id, offset); current(ticket);
         if (!Array.isArray(result?.rows) || typeof result.hasMore !== 'boolean' || result.rows.some(a => !a || a.business_id !== id)) throw new WorkspaceError('INVALID_RESPONSE');
@@ -91,6 +98,54 @@ export function createWorkspace(port) {
       }
     },
     closeHistory() { if (state.phase !== 'ready') throw new WorkspaceError('NOT_READY'); generation++; publish({ history: null }); },
+    async recordRecovery(id, input) {
+      if (state.phase !== 'ready') throw new WorkspaceError('NOT_READY');
+      const membership = state.memberships.find(m => m.business_id === state.businessId);
+      if (!['owner', 'editor'].includes(membership?.role)) throw new WorkspaceError('ACCESS_DENIED');
+      const original = state.actions.find(a => a.id === id);
+      if (!original) throw new WorkspaceError('ACTION_NOT_LOADED');
+      const values = recoveryFields(input);
+      if (values.currency !== membership.businesses?.currency) throw new WorkspaceError('RECOVERY_CURRENCY_MISMATCH');
+      const ticket = ++generation;
+      publish({ phase: 'saving', history: null, error: null });
+      try {
+        const saved = await port.recordRecovery(id, original.revision, values); current(ticket);
+        if (!saved || saved.id !== id || saved.business_id !== state.businessId) throw new WorkspaceError('INVALID_RESPONSE');
+        publish({ phase: 'ready', actions: state.actions.map(a => a.id === id ? saved : a), recoveryReview: null });
+        return structuredClone(saved);
+      } catch (error) {
+        if (ticket === generation) {
+          if (accessLost(error)) clear('signedOut', 'ACCESS_LOST');
+          else if (['23514', '23502', '22001', '22023', '22P02'].includes(code(error))) publish({ phase: 'ready', error: code(error) });
+          else publish({ phase: 'recoveryReview', recoveryReview: { id, revision: original.revision, input: values }, error: code(error) === 'PT409' ? 'PT409' : 'RECOVERY_UNCERTAIN' });
+        }
+        throw error;
+      }
+    },
+    async reloadRecoveryReview() {
+      if (state.phase !== 'recoveryReview' || !state.recoveryReview) throw new WorkspaceError('NO_RECOVERY_REVIEW');
+      const ticket = ++generation;
+      const review = structuredClone(state.recoveryReview);
+      publish({ recoveryReview: { ...review, current: undefined }, error: null });
+      try {
+        const latest = await port.action(state.businessId, review.id); current(ticket);
+        if (!latest || latest.id !== review.id || latest.business_id !== state.businessId) throw new WorkspaceError('INVALID_RESPONSE');
+        publish({ recoveryReview: { ...review, current: latest } });
+      } catch (error) {
+        if (ticket === generation) {
+          if (accessLost(error) || code(error) === 'PGRST116') clear('signedOut', 'ACCESS_LOST');
+          else publish({ error: code(error) });
+        }
+        throw error;
+      }
+    },
+    finishRecoveryReview() {
+      if (state.phase !== 'recoveryReview' || !state.recoveryReview?.current) throw new WorkspaceError('RELOAD_REQUIRED');
+      const latest = state.recoveryReview.current;
+      generation++;
+      // Explicit acknowledgement adopts the read; it never replays the write.
+      publish({ phase: 'ready', actions: state.actions.map(a => a.id === latest.id ? latest : a), recoveryReview: null, error: null });
+    },
     async save(id, draft) {
       if (state.phase !== 'ready') throw new WorkspaceError('NOT_READY');
       const membership = state.memberships.find(m => m.business_id === state.businessId);

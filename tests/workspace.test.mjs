@@ -396,3 +396,78 @@ test('recovery adapter preserves conflict codes while excluding server error det
   const port = createSupabasePort({rpc() { return {single: async () => ({data: null, error: {code: 'PT409', message: 'private payload'}})}; }});
   await assert.rejects(port.recordRecovery('action-a', 1, {}), error => error.code === 'PT409' && error.message === 'PT409');
 });
+
+const recoveryInput = { amountMinorUnits: 1230, currency: 'AUD', date: '2026-09-12', evidence: 'Synthetic receipt' };
+const recoveryMemberships = async () => [{business_id: 'a', role: 'editor', businesses: {currency: 'AUD'}}];
+test('recovery coordinator serialises writes and uses the loaded revision with isolated input', async () => {
+  const pending = deferred(); let payload;
+  const {workspace} = setup({memberships: recoveryMemberships, recordRecovery: (id, revision, input) => {payload = {id, revision, input}; return pending.promise;}});
+  await ready(workspace);
+  const saving = workspace.recordRecovery('action-a', {...recoveryInput, status: 'Resolved'});
+  await assert.rejects(workspace.save('action-a', draft), e => e.code === 'NOT_READY');
+  assert.deepEqual(payload, {id: 'action-a', revision: 1, input: recoveryInput});
+  pending.resolve({...record, revision: 2, recovery_amount: 1230});
+  await saving;
+  assert.equal(workspace.snapshot().actions[0].revision, 2);
+  assert.equal(workspace.snapshot().actions[0].status, 'Open');
+});
+test('recovery validation and role checks stop invalid writes before the port', async () => {
+  let calls = 0;
+  const {workspace} = setup({memberships: recoveryMemberships, recordRecovery: async () => {calls++;}});
+  await ready(workspace);
+  for (const patch of [{amountMinorUnits: -1}, {amountMinorUnits: 0.5}, {amountMinorUnits: 100000000001}, {date: '2026-02-30'}, {evidence: '\u00a0'}, {currency: 'USD'}]) {
+    await assert.rejects(workspace.recordRecovery('action-a', {...recoveryInput, ...patch}));
+  }
+  await assert.rejects(workspace.recordRecovery('foreign', recoveryInput), e => e.code === 'ACTION_NOT_LOADED');
+  const viewer = setup({recordRecovery: async () => {calls++;}}).workspace;
+  await viewer.connect(); await viewer.selectBusiness('b');
+  await assert.rejects(viewer.recordRecovery('action-a', recoveryInput), e => e.code === 'ACCESS_DENIED');
+  assert.equal(calls, 0);
+});
+test('conflict and uncertain recovery require a fresh read and acknowledgement without automatic replay', async () => {
+  for (const failure of ['PT409', 'NETWORK']) {
+    let calls = 0;
+    const {workspace} = setup({memberships: recoveryMemberships, recordRecovery: async () => {calls++; throw fail(failure);}});
+    await ready(workspace);
+    await assert.rejects(workspace.recordRecovery('action-a', recoveryInput));
+    assert.equal(workspace.snapshot().phase, 'recoveryReview');
+    assert.deepEqual(workspace.snapshot().recoveryReview.input, recoveryInput);
+    assert.throws(() => workspace.finishRecoveryReview(), e => e.code === 'RELOAD_REQUIRED');
+    await assert.rejects(workspace.recordRecovery('action-a', recoveryInput), e => e.code === 'NOT_READY');
+    await workspace.reloadRecoveryReview();
+    assert.equal(workspace.snapshot().phase, 'recoveryReview');
+    workspace.finishRecoveryReview();
+    assert.equal(workspace.snapshot().actions[0].revision, 2);
+    assert.equal(workspace.snapshot().recoveryReview, null);
+    assert.equal(calls, 1);
+  }
+});
+test('recovery completion after disconnect cannot restore tenant data', async () => {
+  const pending = deferred();
+  const {workspace} = setup({memberships: recoveryMemberships, recordRecovery: () => pending.promise});
+  await ready(workspace);
+  const saving = workspace.recordRecovery('action-a', recoveryInput);
+  workspace.disconnect(); pending.resolve({...record, revision: 2});
+  await assert.rejects(saving, e => e.code === 'STALE_REQUEST');
+  assert.equal(workspace.snapshot().phase, 'signedOut');
+  assert.deepEqual(workspace.snapshot().actions, []);
+});
+test('recovery access loss and foreign responses clear cached access', async () => {
+  for (const result of [async () => {throw fail('42501');}, async () => ({...record, business_id: 'foreign'}), async () => null]) {
+    const {workspace} = setup({memberships: recoveryMemberships, recordRecovery: result});
+    await ready(workspace);
+    await assert.rejects(workspace.recordRecovery('action-a', recoveryInput));
+    assert.equal(workspace.snapshot().phase, 'signedOut');
+    assert.equal(workspace.snapshot().recoveryReview, null);
+  }
+});
+test('failed recovery reload invalidates a previously fetched revision before acknowledgement', async () => {
+  let reads = 0;
+  const {workspace} = setup({memberships: recoveryMemberships, recordRecovery: async () => {throw fail('PT409');}, action: async () => {if (reads++) throw fail('NETWORK'); return {...record, revision: 2};}});
+  await ready(workspace);
+  await assert.rejects(workspace.recordRecovery('action-a', recoveryInput));
+  await workspace.reloadRecoveryReview();
+  await assert.rejects(workspace.reloadRecoveryReview());
+  assert.throws(() => workspace.finishRecoveryReview(), e => e.code === 'RELOAD_REQUIRED');
+  assert.deepEqual(workspace.snapshot().recoveryReview.input, recoveryInput);
+});

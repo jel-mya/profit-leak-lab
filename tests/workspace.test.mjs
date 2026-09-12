@@ -385,3 +385,14 @@ test('invalid membership payloads fail closed before publishing business access'
   await workspace.connect();
   assert.equal(workspace.snapshot().phase, 'chooseBusiness');
 });
+
+test('recovery adapter forwards only recovery fields and the expected revision', async () => {
+  let call;
+  const port = createSupabasePort({rpc(name, args) { call = {name, args}; return {single: async () => ({data: record, error: null})}; }});
+  await port.recordRecovery('action-a', 3, {amountMinorUnits: 1230, currency: 'AUD', date: '2026-09-12', evidence: 'Synthetic receipt', status: 'Resolved', business_id: 'foreign', created_by: 'spoof'});
+  assert.deepEqual(call, {name: 'record_action_recovery', args: {p_action_id: 'action-a', p_expected_revision: 3, p_amount: 1230, p_currency: 'AUD', p_date: '2026-09-12', p_evidence: 'Synthetic receipt'}});
+});
+test('recovery adapter preserves conflict codes while excluding server error details', async () => {
+  const port = createSupabasePort({rpc() { return {single: async () => ({data: null, error: {code: 'PT409', message: 'private payload'}})}; }});
+  await assert.rejects(port.recordRecovery('action-a', 1, {}), error => error.code === 'PT409' && error.message === 'PT409');
+});

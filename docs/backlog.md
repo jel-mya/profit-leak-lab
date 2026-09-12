@@ -374,3 +374,9 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Currency must explicitly match the business, with integer minor-unit bounds, complete date/evidence fields and Unicode whitespace validation. Existing client insert/update privileges cannot bypass the RPC.
 - 174 local tests pass, including recording/correction history, role denial, stale revision, direct update denial and invalid evidence/currency/amount checks. An initial SQL declaration error was fixed before the passing suite.
 - No live migration, frontend integration or deployment. Next follow `docs/connected-recovery.md`; actual Supabase verification remains required before enabling persistence.
+
+## Recovery client adapter — 12 September 2026
+
+- Added the typed Supabase recovery RPC adapter and recovery fields to action reads. Payloads whitelist recovery inputs and expected revision; server message details remain excluded from client errors.
+- 176 local tests pass, including exact RPC payload isolation and stale-revision error preservation. Controller/UI integration and real Supabase verification remain unfinished; no live migration or cloud configuration change.
+- The updated connected port requires the recovery migration before use. Session-only recovery remains separate and is never automatically uploaded.

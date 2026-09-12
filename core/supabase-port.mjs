@@ -20,7 +20,7 @@ export function createSupabasePort(client) {
     async actions(businessId, offset = 0) {
       if (!Number.isSafeInteger(offset) || offset < 0) throw new WorkspaceError('INVALID_PAGE');
       const rows = await unwrap(client.from('control_actions')
-        .select('id,business_id,title,owner_label,due_date,status,note,revision')
+        .select('id,business_id,title,owner_label,due_date,status,note,revision,recovery_amount,recovery_currency,recovery_date,recovery_evidence')
         .eq('business_id', businessId).order('id').range(offset, offset + 100));
       if (!Array.isArray(rows)) throw new WorkspaceError('INVALID_RESPONSE');
       return { rows: rows.slice(0, 100), hasMore: rows.length > 100 };
@@ -44,11 +44,18 @@ export function createSupabasePort(client) {
     },
     action(businessId, id) {
       return unwrap(client.from('control_actions')
-        .select('id,business_id,title,owner_label,due_date,status,note,revision')
+        .select('id,business_id,title,owner_label,due_date,status,note,revision,recovery_amount,recovery_currency,recovery_date,recovery_evidence')
         .eq('business_id', businessId).eq('id', id).single());
     },
     createBusiness(name, currency) {
       return unwrap(client.rpc('create_business', { p_name: name, p_currency: currency }).single());
+    },
+    recordRecovery(id, revision, recovery) {
+      return unwrap(client.rpc('record_action_recovery', {
+        p_action_id: id, p_expected_revision: revision,
+        p_amount: recovery.amountMinorUnits, p_currency: recovery.currency,
+        p_date: recovery.date, p_evidence: recovery.evidence,
+      }).single());
     },
     createAction(businessId, draft, requestId) {
       return unwrap(client.rpc('create_control_action', {

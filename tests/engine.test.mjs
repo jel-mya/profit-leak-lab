@@ -91,3 +91,12 @@ test('invoice matching preserves case and separator rules with international let
     assert.equal(run({ payments }).duplicateExposure, money(demo.payments[0].amount));
   }
 });
+
+test('calendar dates align with database-supported positive four-digit years', () => {
+  assert.throws(() => dateValue('0000-01-01'));
+  assert.throws(() => dateValue('0000-02-29'));
+  assert.equal(new Date(dateValue('0001-01-01')).toISOString(), '0001-01-01T00:00:00.000Z');
+  assert.equal(new Date(dateValue('9999-12-31')).toISOString(), '9999-12-31T00:00:00.000Z');
+  assert.throws(() => dateValue('1900-02-29'));
+  assert.doesNotThrow(() => dateValue('2000-02-29'));
+});

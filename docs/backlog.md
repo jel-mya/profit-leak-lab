@@ -433,3 +433,8 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Verified GitHub run 34696153408 succeeded for f42baab, covering the complete CI workflow including the production HTTP smoke.
 - Added a single linked pilot-readiness record separating implemented recovery/authentication flows from unrun browser and live-service gates. Updated the next-work list to stop treating delivered recovery persistence code as missing.
 - Documentation-only increment; repository hygiene and diff checks run. No runtime checks repeated, configuration changed or publishing attempted.
+
+## Align client calendar range with recovery storage — 13 September 2026
+
+- Shared date validation now rejects year 0000, which JavaScript accepts but the recovery database contract excludes. Invalid dates fail locally before a recovery request or report calculation.
+- All 194 local tests and application lint pass. New boundaries cover years 0001/9999 and leap-century behaviour. No migration, live configuration or publishing change.

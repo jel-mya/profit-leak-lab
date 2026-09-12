@@ -415,3 +415,9 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Executable PostgreSQL tests now verify that ordinary action edits and recovery corrections share a single revision sequence, reject stale writes in both directions and preserve each other's fields without extra audit events.
 - Added actual grant/RPC checks for direct recovery injection during action creation and for correction attempts after a successful writer is downgraded or removed from membership.
 - All 190 local tests pass. These use PGlite with synthetic Auth shims and sequential role changes; they do not establish live Auth/PostgREST behaviour or simultaneous revocation locking. No application, migration, configuration or deployment change.
+
+## Readable and defensive recovery amounts — 12 September 2026
+
+- Connected action cards, recovery review and audit history share currency-labelled monetary formatting. History no longer requires users to convert minor units mentally; currency-only changes show both monetary values.
+- Missing recovery is distinct from zero, and malformed or unsupported values display Unavailable instead of a misleading zero or NaN. Storage and calculation units remain unchanged.
+- 192 local tests and application lint pass, including currency-only history and invalid-value cases. Production build checked before commit; no browser/live verification or publishing.

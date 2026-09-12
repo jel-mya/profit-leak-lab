@@ -20,6 +20,7 @@ import {
   type Workspace,
 } from '../../../core/workspace.mjs';
 import { createSupabasePort } from '../../../core/supabase-port.mjs';
+import { recoveryDisplay } from '../../../core/recovery-display.mjs';
 import { actionHistoryFields } from '../../../core/action-history-fields.mjs';
 import { workspaceConfig } from '../../../core/workspace-config.mjs';
 
@@ -415,13 +416,13 @@ export default function CloudWorkspace() {
                 <h2>Check the recovery before another change</h2>
                 <p>The record changed or the save result is uncertain. Compare your attempted entry with the latest saved record. Loading and acknowledging do not save again.</p>
                 <h3>Your attempted entry · revision {state.recoveryReview.revision}</h3>
-                <p>{state.recoveryReview.input.currency} {(state.recoveryReview.input.amountMinorUnits / 100).toFixed(2)} · {state.recoveryReview.input.date}</p>
+                <p>{recoveryDisplay(state.recoveryReview.input.amountMinorUnits, state.recoveryReview.input.currency)} · {state.recoveryReview.input.date}</p>
                 <p>{state.recoveryReview.input.evidence}</p>
                 <Button disabled={busy} variant="outline" onClick={() => void perform(() => ws!.reloadRecoveryReview())}>Load current recovery</Button>
                 {state.recoveryReview.current && <>
                   <h3>Current saved record · revision {state.recoveryReview.current.revision}</h3>
                   <p>{state.recoveryReview.current.title} · {state.recoveryReview.current.status}</p>
-                  <p>{state.recoveryReview.current.recovery_amount == null ? 'No recovery recorded' : `${state.recoveryReview.current.recovery_currency} ${(Number(state.recoveryReview.current.recovery_amount) / 100).toFixed(2)} · ${state.recoveryReview.current.recovery_date}`}</p>
+                  <p>{state.recoveryReview.current.recovery_amount == null ? 'No recovery recorded' : `${recoveryDisplay(state.recoveryReview.current.recovery_amount, state.recoveryReview.current.recovery_currency)} · ${state.recoveryReview.current.recovery_date}`}</p>
                   <p>{state.recoveryReview.current.recovery_evidence}</p>
                   <Button disabled={busy} onClick={() => { ws!.finishRecoveryReview(); setMessage('Current record adopted. Any correction needs a separate explicit save.'); }}>I reviewed this; use current record</Button>
                 </>}
@@ -500,7 +501,7 @@ export default function CloudWorkspace() {
                     <p>{a.note}</p>
                     {a.recovery_amount != null && (
                       <div className="action-source">
-                        <p>Reported recovery: {a.recovery_currency} {(Number(a.recovery_amount) / 100).toFixed(2)}</p>
+                        <p>Reported recovery: {recoveryDisplay(a.recovery_amount, a.recovery_currency)}</p>
                         <p>{a.recovery_date} · {a.recovery_evidence}</p>
                         <p className="muted">User-reported evidence; not independently verified.</p>
                       </div>
@@ -547,7 +548,7 @@ export default function CloudWorkspace() {
                       the record captured when history tracking began, not an
                       earlier edit.
                     </p>
-                    <p className="muted">Recovery amounts in history use minor units: 100 = 1 currency unit. Currency changes are listed separately.</p>
+                    <p className="muted">Recovery amounts include their currency. They are user-reported, not independently verified.</p>
                     {state.history.rows.length === 0 && (
                       <p>No history records are available on this page.</p>
                     )}

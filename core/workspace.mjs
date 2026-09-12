@@ -29,6 +29,15 @@ function recoveryFields(input) {
   try { dateValue(input.date); } catch { throw new WorkspaceError('INVALID_RECOVERY'); }
   return { amountMinorUnits: input.amountMinorUnits, currency: input.currency, date: input.date, evidence: input.evidence.trim() };
 }
+function validHistorySnapshot(value, businessId, actionId) {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    && ['title', 'owner_label', 'status', 'note'].every(key => typeof value[key] === 'string')
+    && (value.due_date === null || typeof value.due_date === 'string')
+    && ['recovery_currency', 'recovery_date', 'recovery_evidence'].every(key => value[key] == null || typeof value[key] === 'string')
+    && (value.recovery_amount == null || ['number', 'string'].includes(typeof value.recovery_amount))
+    && (value.id === undefined || value.id === actionId)
+    && (value.business_id === undefined || value.business_id === businessId);
+}
 export function createWorkspace(port) {
   let generation = 0;
   let state = { phase: 'signedOut', userId: null, memberships: [], businessId: null, actions: [], hasMore: false, offset: 0, conflict: null, recoveryReview: null, history: null, creation: null, error: null };
@@ -87,7 +96,9 @@ export function createWorkspace(port) {
       publish({ history: null, error: null });
       try {
         const result = await port.history(businessId, id, before); current(ticket);
-        if (!Array.isArray(result?.rows) || typeof result.hasMore !== 'boolean' || result.rows.some(event => !event || event.action_id !== id || event.business_id !== businessId)) throw new WorkspaceError('INVALID_RESPONSE');
+        if (!Array.isArray(result?.rows) || typeof result.hasMore !== 'boolean' || result.rows.some(event => !event || event.action_id !== id || event.business_id !== businessId
+          || !validHistorySnapshot(event.after_state, businessId, id)
+          || (event.before_state !== null && !validHistorySnapshot(event.before_state, businessId, id)))) throw new WorkspaceError('INVALID_RESPONSE');
         publish({ history: { actionId: id, rows: result.rows, hasMore: result.hasMore } });
       } catch (error) {
         if (ticket === generation) {

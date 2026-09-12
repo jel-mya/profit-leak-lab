@@ -421,3 +421,9 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Connected action cards, recovery review and audit history share currency-labelled monetary formatting. History no longer requires users to convert minor units mentally; currency-only changes show both monetary values.
 - Missing recovery is distinct from zero, and malformed or unsupported values display Unavailable instead of a misleading zero or NaN. Storage and calculation units remain unchanged.
 - 192 local tests and application lint pass, including currency-only history and invalid-value cases. Production build checked before commit; no browser/live verification or publishing.
+
+## Validate embedded audit snapshots — 12 September 2026
+
+- History reads now reject malformed before/after snapshots and mismatched embedded action/business identities before publishing them to the interface. Invalid responses clear cached access rather than exposing a broken or foreign audit view.
+- Text fields and optional recovery field shapes are checked while legacy missing recovery values remain supported. This supplements server isolation; it does not replace RLS.
+- 193 local tests and lint passed before the additional optional recovery-shape checks; the focused workspace suite was rerun for the final change. No live configuration, migration or publishing change.

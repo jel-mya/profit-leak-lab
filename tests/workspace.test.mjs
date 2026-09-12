@@ -494,3 +494,16 @@ test('action conflict rereads block reconciliation and discard a previously fetc
   assert.deepEqual(workspace.snapshot().conflict.draft, draft);
   assert.equal(saves, 1);
 });
+
+test('malformed or foreign embedded history snapshots clear access before rendering', async () => {
+  for (const after of [null, [], 'invalid', {...draft, title: {}}, {...draft, business_id: 'foreign'}, {...draft, id: 'other-action'}]) {
+    const {workspace} = setup({history: async () => ({rows: [{...historyEvent, after_state: after}], hasMore: false})});
+    await ready(workspace);
+    await assert.rejects(workspace.loadHistory(record.id), e => e.code === 'INVALID_RESPONSE');
+    assert.equal(workspace.snapshot().phase, 'signedOut');
+    assert.equal(workspace.snapshot().history, null);
+  }
+  const {workspace} = setup({history: async () => ({rows: [{...historyEvent, before_state: {}}], hasMore: false})});
+  await ready(workspace);
+  await assert.rejects(workspace.loadHistory(record.id), e => e.code === 'INVALID_RESPONSE');
+});

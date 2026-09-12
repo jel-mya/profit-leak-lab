@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { verifyWriteIsolation } from './supabase-write-checks.mjs';
+import { verifyRecoveryIsolation } from './supabase-recovery-checks.mjs';
 import { createRequire } from 'node:module';
 import { workspaceConfig } from '../core/workspace-config.mjs';
 import { verifyReadIsolation } from './supabase-read-checks.mjs';
@@ -30,7 +31,10 @@ if (!writeAuthorised || process.argv.slice(2).some(arg => arg !== '--writes') ||
       b: { business: process.env.LIVE_BUSINESS_B_ID, action: process.env.LIVE_ACTION_B_ID },
     }, message => console.log(`PASS: ${message}`));
     if (writes) {
-      await verifyWriteIsolation({ users: clients, anonymous }, process.env.LIVE_BUSINESS_A_ID, randomUUID(), message => console.log('PASS: ' + message));
+      const action = await verifyWriteIsolation({ users: clients, anonymous }, process.env.LIVE_BUSINESS_A_ID, randomUUID(), message => console.log('PASS: ' + message));
+      const business = await clients[0].from('businesses').select('currency').eq('id', process.env.LIVE_BUSINESS_A_ID).single();
+      if (business.error) throw new Error('Synthetic business currency unavailable');
+      await verifyRecoveryIsolation({ users: clients, anonymous }, action, business.data?.currency, message => console.log('PASS: ' + message));
       console.log('Live read/write checks passed. Synthetic records remain. Revocation, expiry, onboarding concurrency and browser/operational checks remain separate gates.');
     } else console.log('Live read isolation passed. Write permissions, concurrency, revocation and browser flows are still separate release gates.');
   } catch {

@@ -43,4 +43,5 @@ export async function verifyWriteIsolation(clients, businessId, requestId, repor
     && matchesRecord(history.data[1].before_state, created[0].data)
     && matchesRecord(history.data[1].after_state, winners[0].data), 'History snapshots do not match the action records');
   report('Concurrent updates produced one winner, one conflict and exactly two history events');
+  return winners[0].data;
 }

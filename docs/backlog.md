@@ -398,3 +398,9 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Owner/editor action cards now accept total reported recovery, date and evidence using existing validation and revision-checked controller writes. Entry drafts clear only after acknowledged saves or explicit discard; no session-demo data is uploaded.
 - Conflicts and uncertain responses expose attempted values alongside a freshly loaded record, requiring acknowledgement without automatic replay. Other saves remain disabled during recovery review. Sign-out, navigation and reload discard local entries as documented.
 - Existing 184 local tests and application lint pass. These cover core validation and reconciliation, not the new browser interactions. Production build is checked before commit. Browser interaction and real Supabase verification remain required before enabling the pilot; cloud configuration and publishing are unchanged.
+
+## Opt-in live recovery verification harness — 12 September 2026
+
+- Extended the existing explicitly opted-in synthetic write command with recovery role/currency denial, concurrent revision checks, stale retry rejection and zero-correction audit comparisons on its newly created action.
+- Added local fault-injection checks for permission, currency, double-winner, unrelated-status mutation, missing zero values, missing events and corrupt snapshots. No live service was contacted and no credentials or configuration changed.
+- Live execution still requires the disposable synthetic project and documented environment gates. Browser interactions, revocation and concurrent currency changes remain unverified.

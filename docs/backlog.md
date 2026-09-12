@@ -386,3 +386,9 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Added controller recovery validation, business-currency checks, revision-based writes and write serialization. Access loss clears cached data and late responses cannot restore a signed-out session.
 - Conflicting or uncertain writes retain attempted values in a separate recovery-review state. Fresh reads and explicit acknowledgement are required; neither step automatically repeats a write. Failed rereads invalidate previously fetched review data.
 - Added six controller tests covering payload isolation, validation/roles, concurrent-call exclusion, uncertain/conflict reconciliation, stale sign-out responses, access loss and failed rereads. UI integration and live Supabase checks remain the next gates; cloud configuration and preview publishing remain disabled.
+
+## Connected recovery read visibility — 12 September 2026
+
+- Saved action cards now display reported recovery amount, currency, date and evidence with an explicit user-reported label.
+- Audit history includes recovery changes, retaining zero corrections and distinguishing unset values. Recovery-only edits no longer incorrectly report that no tracked fields changed. Audit amounts explicitly use minor units with a conversion explanation.
+- 184 local tests pass, including recovery-only corrections and legacy null/missing fields. Recovery write/reconciliation UI and real Supabase checks remain unfinished; no cloud configuration or publishing changes.

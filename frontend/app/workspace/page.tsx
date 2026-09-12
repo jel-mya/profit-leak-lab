@@ -19,6 +19,7 @@ import {
   type Workspace,
 } from '../../../core/workspace.mjs';
 import { createSupabasePort } from '../../../core/supabase-port.mjs';
+import { actionHistoryFields } from '../../../core/action-history-fields.mjs';
 import { workspaceConfig } from '../../../core/workspace-config.mjs';
 
 const blank: Draft = {
@@ -475,6 +476,13 @@ export default function CloudWorkspace() {
                       {a.due_date || 'No due date'} · revision {a.revision}
                     </p>
                     <p>{a.note}</p>
+                    {a.recovery_amount != null && (
+                      <div className="action-source">
+                        <p>Reported recovery: {a.recovery_currency} {(Number(a.recovery_amount) / 100).toFixed(2)}</p>
+                        <p>{a.recovery_date} · {a.recovery_evidence}</p>
+                        <p className="muted">User-reported evidence; not independently verified.</p>
+                      </div>
+                    )}
                     <Button
                       variant="outline"
                       disabled={busy || state.phase !== 'ready'}
@@ -511,6 +519,7 @@ export default function CloudWorkspace() {
                       the record captured when history tracking began, not an
                       earlier edit.
                     </p>
+                    <p className="muted">Recovery amounts in history use minor units: 100 = 1 currency unit. Currency changes are listed separately.</p>
                     {state.history.rows.length === 0 && (
                       <p>No history records are available on this page.</p>
                     )}
@@ -537,65 +546,15 @@ export default function CloudWorkspace() {
                               : 'No actor recorded for this baseline'}
                         </p>
                         <dl className="history-fields">
-                          {(
-                            [
-                              'title',
-                              'owner_label',
-                              'due_date',
-                              'status',
-                              'note',
-                            ] as const
-                          )
-                            .filter(
-                              (field) =>
-                                !event.before_state ||
-                                event.before_state[field] !==
-                                  event.after_state[field],
-                            )
-                            .map((field) => (
-                              <div key={field}>
-                                <dt>
-                                  {
-                                    {
-                                      title: 'Action',
-                                      owner_label: 'Owner',
-                                      due_date: 'Due date',
-                                      status: 'Status',
-                                      note: 'Evidence / outcome',
-                                    }[field]
-                                  }
-                                </dt>
-                                {event.before_state && (
-                                  <dd>
-                                    Before:{' '}
-                                    {event.before_state[field] || 'Not set'}
-                                  </dd>
-                                )}
-                                <dd>
-                                  {event.before_state
-                                    ? 'After'
-                                    : 'Recorded value'}
-                                  : {event.after_state[field] || 'Not set'}
-                                </dd>
-                              </div>
-                            ))}
+                          {actionHistoryFields(event.before_state, event.after_state).map(field => (
+                            <div key={field.key}>
+                              <dt>{field.label}</dt>
+                              {field.before !== null && <dd>Before: {field.before}</dd>}
+                              <dd>{event.before_state ? 'After' : 'Recorded value'}: {field.after}</dd>
+                            </div>
+                          ))}
                         </dl>
-                        {event.before_state &&
-                          [
-                            'title',
-                            'owner_label',
-                            'due_date',
-                            'status',
-                            'note',
-                          ].every(
-                            (field) =>
-                              event.before_state![
-                                field as keyof typeof event.before_state
-                              ] ===
-                              event.after_state[
-                                field as keyof typeof event.after_state
-                              ],
-                          ) && <p>No editable field values changed.</p>}
+                        {actionHistoryFields(event.before_state, event.after_state).length === 0 && <p>No tracked field values changed.</p>}
                       </article>
                     ))}
                     <div className="import-actions">

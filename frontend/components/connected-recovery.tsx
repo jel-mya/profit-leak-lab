@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { recoveryOutcome } from '../../core/recovery-outcome.mjs';
@@ -15,8 +15,15 @@ export function ConnectedRecovery({ action, currency, disabled, save }: {
   const [date, setDate] = useState('');
   const [evidence, setEvidence] = useState('');
   const [message, setMessage] = useState('');
+  const hasEntry = amount !== '' || date !== '' || evidence !== '';
+  useEffect(() => {
+    if (!hasEntry) return;
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [hasEntry]);
   return <details className="action-source">
-    <summary>Record or correct reported recovery</summary>
+    <summary>Record or correct reported recovery{hasEntry ? ' · Unsaved entry' : ''}</summary>
     <p className="muted">Enter the total recovery for this action, not an additional payment. Corrections create history and do not change the action status. Unsaved entries stay in this page only.</p>
     <form className="cloud-form" onSubmit={event => {
       event.preventDefault();

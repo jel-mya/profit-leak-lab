@@ -438,3 +438,8 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 
 - Shared date validation now rejects year 0000, which JavaScript accepts but the recovery database contract excludes. Invalid dates fail locally before a recovery request or report calculation.
 - All 194 local tests and application lint pass. New boundaries cover years 0001/9999 and leap-century behaviour. No migration, live configuration or publishing change.
+
+## Surface unsaved connected recovery entries — 13 September 2026
+
+- Recovery detail summaries now show Unsaved entry whenever an amount, date or evidence field contains input, including when collapsed. A best-effort beforeunload warning remains until successful save, explicit discard or component removal.
+- Lint and production build checked. No additional unit test for this small event-listener change; browser warning behaviour remains unverified and browser-dependent. No draft persistence, live configuration or publishing change.

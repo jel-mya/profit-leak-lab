@@ -10,7 +10,7 @@
 ## Highest-value next work
 1. Persist actions safely: local SQL isolation, revision-checked updates, client-immutable history and starter-business onboarding now pass tests. Opt-in Supabase Auth and UI onboarding/conflict handling are implemented and disabled by default. Repeat isolation/concurrency cases through the actual Supabase API before collecting real customer data.
 2. Import reporting context is implemented: mapping, preview, explicit snapshot/cumulative/period dates, currency checks, worker parsing, pagination and version metadata in downloads. Remaining: end-to-end browser verification when authorised and cross-session source-version persistence after the live-data gate. Do not infer periods or silently filter mismatched reports.
-3. Session exception lifecycle is implemented: source presence/current-finding reconciliation, original reporting context, closure notes, user-reported recovery records and correction history, plus status/overdue/incomplete-detail triage. Remaining: server-enforced recovery history and cross-session reconciliation after live Supabase verification. No recovery is inferred from closure or disappearance.
+3. Session exception lifecycle is implemented: source presence/current-finding reconciliation, original reporting context, closure notes, user-reported recovery records and correction history, plus status/overdue/incomplete-detail triage. Server-enforced recovery history, revision coordination and connected entry/review controls are implemented but disabled. Remaining: browser/live verification and cross-session source reconciliation. See docs/pilot-readiness.md. No recovery is inferred from closure or disappearance.
 4. Add retention and unusual-payment controls from the strategy; validate domain calculations with anonymised synthetic fixtures.
 5. Free Trade Money Check and original symptom-led acquisition pages; no indexed customer dashboard pages.
 6. Billing only after the user handles protected credentials/terms and pricing validation. No spending automatically.
@@ -427,3 +427,9 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - History reads now reject malformed before/after snapshots and mismatched embedded action/business identities before publishing them to the interface. Invalid responses clear cached access rather than exposing a broken or foreign audit view.
 - Text fields and optional recovery field shapes are checked while legacy missing recovery values remain supported. This supplements server isolation; it does not replace RLS.
 - 193 local tests and lint passed before the additional optional recovery-shape checks; the focused workspace suite was rerun for the final change. No live configuration, migration or publishing change.
+
+## Reconcile pilot readiness and CI evidence — 13 September 2026
+
+- Verified GitHub run 34696153408 succeeded for f42baab, covering the complete CI workflow including the production HTTP smoke.
+- Added a single linked pilot-readiness record separating implemented recovery/authentication flows from unrun browser and live-service gates. Updated the next-work list to stop treating delivered recovery persistence code as missing.
+- Documentation-only increment; repository hygiene and diff checks run. No runtime checks repeated, configuration changed or publishing attempted.

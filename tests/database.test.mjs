@@ -288,6 +288,32 @@ test('PostgreSQL enforces the tenant security contract', async t => {
     } finally { await db.exec('rollback'); }
   });
   const requestId = '30000000-0000-4000-8000-000000000001';
+  const recovery = (id = actionA, revision = 1, amount = 1230, currency = 'AUD', note = 'Synthetic receipt') =>
+    db.query("select * from public.record_action_recovery($1,$2,$3,$4,'2026-09-12',$5)", [id, revision, amount, currency, note]);
+  await t.test('recovery writes retain action status and revisioned before/after history', async () => {
+    await as(editor, async () => {
+      const saved = (await recovery()).rows[0];
+      assert.equal(saved.status, 'Open');
+      assert.equal(Number(saved.recovery_amount), 1230);
+      assert.equal(saved.revision, 2);
+      const corrected = (await recovery(actionA, 2, 0, 'AUD', 'Corrected synthetic receipt')).rows[0];
+      assert.equal(corrected.revision, 3);
+      const event = (await db.query('select before_state,after_state from public.action_events where action_id=$1 and revision=3', [actionA])).rows[0];
+      assert.equal(event.before_state.recovery_amount, 1230);
+      assert.equal(event.after_state.recovery_amount, 0);
+    });
+  });
+  await t.test('recovery writes deny unauthorised callers and stale revisions', async () => {
+    for (const user of [viewer, other, outsider]) await denied(as(user, () => recovery()));
+    await denied(as(null, () => recovery(), 'anon'));
+    await assert.rejects(as(editor, () => recovery(actionA, 99)), e => e.code === 'PT409');
+    await denied(as(editor, () => db.query('update public.control_actions set recovery_amount=1 where id=$1', [actionA])));
+  });
+  await t.test('recovery requires complete evidence and matching business currency', async () => {
+    for (const [amount, currency, note, code] of [[-1,'AUD','Receipt','23514'], [1230,'USD','Receipt','22023'], [1230,'AUD','\u00a0','23514'], [null,'AUD','Receipt','23514']]) {
+      await assert.rejects(as(editor, () => recovery(actionA, 1, amount, currency, note)), e => e.code === code);
+    }
+  });
   await t.test('closed outcomes reject Unicode whitespace consistently with the client', async () => {
     const whitespace = '\u0009\u000a\u000b\u000c\u000d\u0020\u00a0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000\ufeff';
     for (const note of [...whitespace, whitespace]) {

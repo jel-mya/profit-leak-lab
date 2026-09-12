@@ -367,3 +367,10 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Manual action duplicate checks now compare the trimmed input used for storage. Adding an existing title with leading/trailing spaces no longer creates a second follow-up. Source-linked identity matching is unchanged.
 - Application lint and production build passed. This one-line comparison fix adds no new runtime dependency or unit test; the newer committed recovery-draft continuity work is preserved.
 - No browser interaction, hosted deployment or live Supabase operation was performed in this increment.
+
+## Revision-checked recovery database contract — 12 September 2026
+
+- Added nullable recovery fields and an owner/editor RPC using action revision checks and membership/business locks. Existing action triggers record corrections in before/after history; action status remains unchanged.
+- Currency must explicitly match the business, with integer minor-unit bounds, complete date/evidence fields and Unicode whitespace validation. Existing client insert/update privileges cannot bypass the RPC.
+- 174 local tests pass, including recording/correction history, role denial, stale revision, direct update denial and invalid evidence/currency/amount checks. An initial SQL declaration error was fixed before the passing suite.
+- No live migration, frontend integration or deployment. Next follow `docs/connected-recovery.md`; actual Supabase verification remains required before enabling persistence.

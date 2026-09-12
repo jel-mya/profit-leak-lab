@@ -392,3 +392,9 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Saved action cards now display reported recovery amount, currency, date and evidence with an explicit user-reported label.
 - Audit history includes recovery changes, retaining zero corrections and distinguishing unset values. Recovery-only edits no longer incorrectly report that no tracked fields changed. Audit amounts explicitly use minor units with a conversion explanation.
 - 184 local tests pass, including recovery-only corrections and legacy null/missing fields. Recovery write/reconciliation UI and real Supabase checks remain unfinished; no cloud configuration or publishing changes.
+
+## Connected recovery entry and review controls — 12 September 2026
+
+- Owner/editor action cards now accept total reported recovery, date and evidence using existing validation and revision-checked controller writes. Entry drafts clear only after acknowledged saves or explicit discard; no session-demo data is uploaded.
+- Conflicts and uncertain responses expose attempted values alongside a freshly loaded record, requiring acknowledgement without automatic replay. Other saves remain disabled during recovery review. Sign-out, navigation and reload discard local entries as documented.
+- Existing 184 local tests and application lint pass. These cover core validation and reconciliation, not the new browser interactions. Production build is checked before commit. Browser interaction and real Supabase verification remain required before enabling the pilot; cloud configuration and publishing are unchanged.

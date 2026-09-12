@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { ConnectedRecovery } from '@/components/connected-recovery';
 import {
   Select,
   SelectContent,
@@ -30,6 +31,9 @@ const blank: Draft = {
   note: '',
 };
 const messages: Record<string, string> = {
+  RECOVERY_UNCERTAIN: 'The recovery may have been saved. Load and review the current record before making another change.',
+  INVALID_RECOVERY: 'Check the recovery amount, date and evidence.',
+  RECOVERY_CURRENCY_MISMATCH: 'Recovery currency must match the business. Refresh your business access before continuing.',
   CREATE_UNCERTAIN:
     'The creation result is uncertain. Retry the original request or check saved actions before discarding it.',
   CREATE_REVIEW_REQUIRED:
@@ -388,7 +392,7 @@ export default function CloudWorkspace() {
         </section>
       )}
       {state?.businessId &&
-        ['ready', 'saving', 'conflict'].includes(state.phase) && (
+        ['ready', 'saving', 'conflict', 'recoveryReview'].includes(state.phase) && (
           <>
             <div className="panel-heading">
               <p className="muted">
@@ -406,6 +410,24 @@ export default function CloudWorkspace() {
                 Switch business
               </Button>
             </div>
+            {state.recoveryReview && (
+              <section className="panel" aria-label="Recovery review">
+                <h2>Check the recovery before another change</h2>
+                <p>The record changed or the save result is uncertain. Compare your attempted entry with the latest saved record. Loading and acknowledging do not save again.</p>
+                <h3>Your attempted entry · revision {state.recoveryReview.revision}</h3>
+                <p>{state.recoveryReview.input.currency} {(state.recoveryReview.input.amountMinorUnits / 100).toFixed(2)} · {state.recoveryReview.input.date}</p>
+                <p>{state.recoveryReview.input.evidence}</p>
+                <Button disabled={busy} variant="outline" onClick={() => void perform(() => ws!.reloadRecoveryReview())}>Load current recovery</Button>
+                {state.recoveryReview.current && <>
+                  <h3>Current saved record · revision {state.recoveryReview.current.revision}</h3>
+                  <p>{state.recoveryReview.current.title} · {state.recoveryReview.current.status}</p>
+                  <p>{state.recoveryReview.current.recovery_amount == null ? 'No recovery recorded' : `${state.recoveryReview.current.recovery_currency} ${(Number(state.recoveryReview.current.recovery_amount) / 100).toFixed(2)} · ${state.recoveryReview.current.recovery_date}`}</p>
+                  <p>{state.recoveryReview.current.recovery_evidence}</p>
+                  <Button disabled={busy} onClick={() => { ws!.finishRecoveryReview(); setMessage('Current record adopted. Any correction needs a separate explicit save.'); }}>I reviewed this; use current record</Button>
+                </>}
+                <p className="muted">Signing out or reloading the page clears the attempted entry from this tab. Review saved recovery before entering it again.</p>
+              </section>
+            )}
             {state.creation && (
               <section className="panel" aria-label="Uncertain action creation">
                 <h2>Check the pending action</h2>
@@ -499,6 +521,12 @@ export default function CloudWorkspace() {
                         Edit action
                       </Button>
                     )}
+                    {canEdit && <ConnectedRecovery action={a} currency={state.memberships.find(m => m.business_id === state.businessId)?.businesses?.currency ?? ''} disabled={busy || state.phase !== 'ready'} save={async input => {
+                      setBusy(true); setMessage('');
+                      try { return await ws!.recordRecovery(a.id, input); }
+                      catch (error) { setMessage(errorText(error)); throw error; }
+                      finally { setBusy(false); }
+                    }} />}
                   </article>
                 ))}
                 {state.history && (
@@ -748,6 +776,7 @@ export default function CloudWorkspace() {
                       type="submit"
                       disabled={
                         busy ||
+                        state.phase === 'recoveryReview' ||
                         state.phase === 'saving' ||
                         (!editing && !!state.creation) ||
                         (state.phase === 'conflict' && !state.conflict?.current)

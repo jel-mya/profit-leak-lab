@@ -409,3 +409,9 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 
 - Action conflict reloads now clear any previously fetched version before awaiting the new read, matching the recovery-review safeguard. Reconciliation is blocked while reloading and after a failed reread, preserving the original draft without issuing a write against the older cached revision.
 - 187 local tests and application lint pass. The regression exercises an initial successful read, a pending reread, failed reread and denied reconciliation with no extra write. No live service or publishing changes.
+
+## Recovery revocation and shared revision verification — 12 September 2026
+
+- Executable PostgreSQL tests now verify that ordinary action edits and recovery corrections share a single revision sequence, reject stale writes in both directions and preserve each other's fields without extra audit events.
+- Added actual grant/RPC checks for direct recovery injection during action creation and for correction attempts after a successful writer is downgraded or removed from membership.
+- All 190 local tests pass. These use PGlite with synthetic Auth shims and sequential role changes; they do not establish live Auth/PostgREST behaviour or simultaneous revocation locking. No application, migration, configuration or deployment change.

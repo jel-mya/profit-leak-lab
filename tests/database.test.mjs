@@ -290,6 +290,45 @@ test('PostgreSQL enforces the tenant security contract', async t => {
   const requestId = '30000000-0000-4000-8000-000000000001';
   const recovery = (id = actionA, revision = 1, amount = 1230, currency = 'AUD', note = 'Synthetic receipt') =>
     db.query("select * from public.record_action_recovery($1,$2,$3,$4,'2026-09-12',$5)", [id, revision, amount, currency, note]);
+  await t.test('action edits and recovery writes share one revision sequence without losing recovery', async () => {
+    await as(editor, async () => {
+      await recovery();
+      await db.exec('savepoint stale_edit');
+      await assert.rejects(save(actionA, 1), e => e.code === 'PT409');
+      await db.exec('rollback to savepoint stale_edit');
+      const edited = (await save(actionA, 2)).rows[0];
+      assert.equal(edited.revision, 3);
+      assert.equal(Number(edited.recovery_amount), 1230);
+      assert.equal(edited.recovery_evidence, 'Synthetic receipt');
+      await db.exec('savepoint stale_recovery');
+      await assert.rejects(recovery(actionA, 2), e => e.code === 'PT409');
+      await db.exec('rollback to savepoint stale_recovery');
+      const corrected = (await recovery(actionA, 3, 0)).rows[0];
+      assert.equal(corrected.revision, 4);
+      assert.equal(corrected.status, edited.status);
+      assert.equal(corrected.note, edited.note);
+      const events = (await db.query('select revision from public.action_events where action_id=$1 order by revision', [actionA])).rows;
+      assert.deepEqual(events.map(e => Number(e.revision)), [1, 2, 3, 4]);
+    });
+  });
+  await t.test('revoked or downgraded members cannot correct a previously saved recovery', async () => {
+    for (const revoke of [false, true]) {
+      await db.exec('begin');
+      try {
+        await db.query("select set_config('request.jwt.claim.sub',$1,true)", [editor]);
+        await db.exec('set local role authenticated');
+        await recovery();
+        await db.exec('reset role');
+        await db.query(revoke ? 'delete from public.memberships where business_id=$1 and user_id=$2'
+          : "update public.memberships set role='viewer' where business_id=$1 and user_id=$2", [businessA, editor]);
+        await db.exec('set local role authenticated');
+        await denied(recovery(actionA, 2, 0));
+      } finally { await db.exec('rollback'); }
+    }
+  });
+  await t.test('direct creation cannot inject recovery outside the revision-checked RPC', async () => {
+    await denied(as(editor, () => db.query("insert into public.control_actions(business_id,title,created_by,recovery_amount,recovery_currency,recovery_date,recovery_evidence) values ($1,'Synthetic bypass',$2,100,'AUD','2026-09-12','Synthetic')", [businessA, editor])));
+  });
   await t.test('recovery writes retain action status and revisioned before/after history', async () => {
     await as(editor, async () => {
       const saved = (await recovery()).rows[0];

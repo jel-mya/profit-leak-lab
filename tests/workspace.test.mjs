@@ -471,3 +471,26 @@ test('failed recovery reload invalidates a previously fetched revision before ac
   assert.throws(() => workspace.finishRecoveryReview(), e => e.code === 'RELOAD_REQUIRED');
   assert.deepEqual(workspace.snapshot().recoveryReview.input, recoveryInput);
 });
+
+test('action conflict rereads block reconciliation and discard a previously fetched revision on failure', async () => {
+  const pending = deferred(); let reads = 0; let saves = 0;
+  const {workspace} = setup({
+    saveAction: async () => {saves++; throw fail('PT409');},
+    action: async () => {
+      if (reads++ === 0) return {...record, revision: 2};
+      await pending.promise;
+      throw fail('NETWORK');
+    },
+  });
+  await ready(workspace);
+  await assert.rejects(workspace.save('action-a', draft));
+  await workspace.reloadConflict();
+  assert.equal(workspace.snapshot().conflict.current.revision, 2);
+  const reloading = workspace.reloadConflict();
+  await assert.rejects(workspace.resolveConflict(draft), e => e.code === 'RELOAD_REQUIRED');
+  pending.resolve();
+  await assert.rejects(reloading);
+  await assert.rejects(workspace.resolveConflict(draft), e => e.code === 'RELOAD_REQUIRED');
+  assert.deepEqual(workspace.snapshot().conflict.draft, draft);
+  assert.equal(saves, 1);
+});

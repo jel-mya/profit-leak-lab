@@ -174,6 +174,7 @@ export function createWorkspace(port) {
       if (state.phase !== 'conflict') throw new WorkspaceError('NO_CONFLICT');
       const ticket = ++generation;
       const conflict = structuredClone(state.conflict);
+      publish({ conflict: { ...conflict, current: undefined }, error: null });
       try {
         const latest = await port.action(state.businessId, conflict.id); current(ticket);
         if (!latest || latest.id !== conflict.id || latest.business_id !== state.businessId) throw new WorkspaceError('INVALID_RESPONSE');

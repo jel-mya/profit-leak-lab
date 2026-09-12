@@ -404,3 +404,8 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Extended the existing explicitly opted-in synthetic write command with recovery role/currency denial, concurrent revision checks, stale retry rejection and zero-correction audit comparisons on its newly created action.
 - Added local fault-injection checks for permission, currency, double-winner, unrelated-status mutation, missing zero values, missing events and corrupt snapshots. No live service was contacted and no credentials or configuration changed.
 - Live execution still requires the disposable synthetic project and documented environment gates. Browser interactions, revocation and concurrent currency changes remain unverified.
+
+## Invalidate stale action-conflict rereads — 12 September 2026
+
+- Action conflict reloads now clear any previously fetched version before awaiting the new read, matching the recovery-review safeguard. Reconciliation is blocked while reloading and after a failed reread, preserving the original draft without issuing a write against the older cached revision.
+- 187 local tests and application lint pass. The regression exercises an initial successful read, a pending reread, failed reread and denied reconciliation with no extra write. No live service or publishing changes.

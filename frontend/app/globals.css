@@ -133,17 +133,17 @@ body {
   }
 }
 :root {
-  --background: #f3f2ef;
-  --foreground: #242729;
+  --background: #f2f0e9;
+  --foreground: #252a27;
   --card: #fff;
-  --card-foreground: #242729;
-  --primary: #ff8a24;
+  --card-foreground: #252a27;
+  --primary: #f5a623;
   --primary-foreground: #fff;
-  --muted: #e9e8e4;
+  --muted: #e7e5dc;
   --muted-foreground: #555b60;
-  --accent: #fff0df;
+  --accent: #fff0d4;
   --accent-foreground: #58300e;
-  --border: #d4d5d2;
+  --border: #d2d3c9;
   --input: #a7adae;
   --ring: #a94408;
   --radius: 0.3rem;
@@ -200,7 +200,7 @@ button {
 .brand-mark {
   display: grid;
   place-items: center;
-  background: #ff8a24;
+  background: #f5a623;
   color: #fff;
   width: 38px;
   height: 38px;
@@ -291,7 +291,7 @@ label {
   display: flex;
   gap: 18px;
   padding: 11px 16px;
-  background: #e9e8e4;
+  background: #e7e5dc;
   border: 1px solid #cacbc6;
   border-radius: 6px;
   font-size: 12px;
@@ -335,9 +335,9 @@ label {
   background: #fff;
 }
 .investigation {
-  background: #24292d;
+  background: #252a27;
   color: #fff;
-  border-color: #24292d;
+  border-color: #252a27;
 }
 .investigation .eyebrow {
   color: #f5bd88;
@@ -460,7 +460,7 @@ td small {
   color: #555b60;
 }
 hr {
-  border-color: #d4d5d2;
+  border-color: #d2d3c9;
   margin: 22px 0;
 }
 .risk {
@@ -480,7 +480,7 @@ hr {
   display: flex;
   align-items: center;
   gap: 18px;
-  border-bottom: 1px solid #d4d5d2;
+  border-bottom: 1px solid #d2d3c9;
   padding: 14px 0;
 }
 .control-row > span {
@@ -493,7 +493,7 @@ hr {
   margin: 22px 0;
 }
 .action-card {
-  border-top: 1px solid #d4d5d2;
+  border-top: 1px solid #d2d3c9;
   padding: 20px 0;
 }
 .action-fields {
@@ -644,11 +644,11 @@ footer {
 
 /* Workshop palette: charcoal structure, paper surfaces, safety-orange actions. */
 :root {
-  --primary-foreground: #242729;
-  --secondary: #e9e8e4;
-  --secondary-foreground: #242729;
+  --primary-foreground: #252a27;
+  --secondary: #e7e5dc;
+  --secondary-foreground: #252a27;
   --popover: #fff;
-  --popover-foreground: #242729;
+  --popover-foreground: #252a27;
   --destructive: #ac3326;
 }
 .dark {
@@ -658,27 +658,27 @@ footer {
   --popover-foreground: #f4f3ef;
 }
 .brandbar {
-  background: #24292d;
+  background: #252a27;
   color: #fff;
-  border-bottom: 4px solid #ff8a24;
+  border-bottom: 4px solid #f5a623;
   flex-wrap: wrap;
 }
 .brandbar > a:last-child:not(.brand) {
-  color: #ffb474;
+  color: #f5bd65;
   font-size: 14px;
   font-weight: 700;
   text-underline-offset: 4px;
 }
-.brand-mark { color: #242729; flex-shrink: 0; }
+.brand-mark { color: #252a27; flex-shrink: 0; }
 h1 { font-weight: 800; letter-spacing: -1px; }
-.investigation { border-left: 5px solid #ff8a24; }
-.investigation strong { color: #ffae66; }
+.investigation { border-left: 5px solid #f5a623; }
+.investigation strong { color: #f5a623; }
 [data-slot='tabs-trigger'] { font-size: 14px; min-height: 44px; }
 [data-slot='tabs-trigger'][data-active],
 [data-slot='tabs-trigger'][data-state='active'] {
-  background: #24292d;
+  background: #252a27;
   color: #fff;
-  box-shadow: inset 0 -3px #ff8a24;
+  box-shadow: inset 0 -3px #f5a623;
 }
 [data-slot='button'], [data-slot='input'], [data-slot='select-trigger'] {
   min-height: 44px;
@@ -710,3 +710,20 @@ td, .signal, .coverage, .stat p, .stat span, .cloud-form label { font-size: 14px
 
 .action-source { border-left: 3px solid var(--primary); padding: 8px 16px; margin-bottom: 18px; overflow-wrap: anywhere; }
 .action-source > p:first-child { font-size: 14px; font-weight: 700; }
+
+/* Flat, legible workshop finishes; colour supports the written status. */
+.investigation strong { color: #fffaf0; }
+.investigation .eyebrow { color: #f5bd65; }
+.brandbar { border-bottom-width: 3px; }
+.panel, .stat { box-shadow: 0 2px 0 #252a270a; }
+thead { background: #f2f0e9; }
+td { font-variant-numeric: tabular-nums; }
+.pill { background: #e7e5dc; color: #424b43; }
+.health-total { background: #e8ede6; border-left: 4px solid #426749; }
+.good { color: #28603c; font-weight: 650; }
+.risk { color: #a32f24; }
+.demo-banner, .demo-banner span, .session-tag, .split span { font-size: 14px; }
+[data-slot='button'].text-primary { color: #864008; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0s !important; animation-duration: 0s !important; }
+}

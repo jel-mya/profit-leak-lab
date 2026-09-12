@@ -33,3 +33,6 @@ Investigation totals are signals, not proven loss, collectible cash, savings, au
 Cloudflare-compatible frontend; stateless browser analysis first. Supabase Auth/Postgres and tenant-scoped row-level security for future persistence. No service-role credential in any frontend. Explicit business membership controls every tenant access; deny anonymous database reads. Real financial data must not enter demo storage, logs, analytics, fixtures or Git.
 
 See README.md, docs/architecture.md and docs/backlog.md for verified implementation state and next work. Earlier market figures/vendor fees are historical research, not current verified facts. No revenue or recovered-money claim without evidence.
+
+## Visual direction
+Use a practical workshop palette for tradies across age groups: deep charcoal (#252a27), warm paper (#f2f0e9), white work surfaces and restrained amber-orange (#f5a623). Keep key financial figures neutral and clear; reserve green for positive outcomes and brick red for risk, alongside written labels. Use flat surfaces, modest corners, readable 14px operational text and 44px controls. Avoid neon, purple gradients and decorative glow. Honour reduced-motion preferences.

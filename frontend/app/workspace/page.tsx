@@ -23,6 +23,7 @@ import { createSupabasePort } from '../../../core/supabase-port.mjs';
 import { recoveryDisplay } from '../../../core/recovery-display.mjs';
 import { actionHistoryFields } from '../../../core/action-history-fields.mjs';
 import { workspaceConfig } from '../../../core/workspace-config.mjs';
+import { canLeaveRecoveryView, hasUnsavedRecovery, updateDirtyRecoveryActions } from '../../../core/connected-recovery-navigation.mjs';
 
 const blank: Draft = {
   title: '',
@@ -107,6 +108,23 @@ export default function CloudWorkspace() {
   const [currency, setCurrency] = useState('AUD');
   const [draft, setDraft] = useState<Draft>(blank);
   const [editing, setEditing] = useState<string | null>(null);
+  const [dirtyRecoveryActions, setDirtyRecoveryActions] = useState<Set<string>>(() => new Set());
+  useEffect(() => {
+    if (!hasUnsavedRecovery(dirtyRecoveryActions)) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      // Legacy browsers require returnValue as well as preventDefault.
+      // oxlint-disable-next-line typescript/no-deprecated
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [dirtyRecoveryActions]);
+  function approveRecoveryNavigation(clear = true) {
+    if (!canLeaveRecoveryView(dirtyRecoveryActions, message => window.confirm(message))) return false;
+    if (clear) setDirtyRecoveryActions(new Set());
+    return true;
+  }
   useEffect(() => {
     let alive = true;
     let cleanup = () => {};
@@ -141,6 +159,7 @@ export default function CloudWorkspace() {
           if (!alive) return;
           setState(next);
           if (!next.userId) {
+            setDirtyRecoveryActions(new Set());
             setDraft(blank);
             setEditing(null);
           }
@@ -202,8 +221,11 @@ export default function CloudWorkspace() {
     }
   }
   async function createAndRefresh(values: Draft) {
+    if (!approveRecoveryNavigation(false)) return false;
     const businessId = runtime!.workspace.snapshot().businessId!;
     await runtime!.workspace.create(values);
+    // A failed creation leaves the current recovery forms mounted and dirty.
+    setDirtyRecoveryActions(new Set());
     // Acknowledged writes must clear the draft even if the subsequent read fails.
     setDraft(blank);
     setEditing(null);
@@ -231,7 +253,10 @@ export default function CloudWorkspace() {
   const canEdit = ['owner', 'editor'].includes(role ?? '');
   return (
     <main className="cloud-workspace">
-      <Link href="/" className="eyebrow">
+      <Link href="/" className="eyebrow" onClick={event => {
+        if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+        if (!approveRecoveryNavigation()) event.preventDefault();
+      }}>
         ← PROFITLEAKLAB DEMO
       </Link>
       <div className="heading-row">
@@ -247,6 +272,7 @@ export default function CloudWorkspace() {
             variant="outline"
             onClick={() =>
               void perform(async () => {
+                if (!approveRecoveryNavigation()) return;
                 ws?.disconnect();
                 setDraft(blank);
                 setEditing(null);
@@ -403,6 +429,7 @@ export default function CloudWorkspace() {
                 variant="outline"
                 disabled={busy || state.phase !== 'ready'}
                 onClick={() => {
+                  if (!approveRecoveryNavigation()) return;
                   setDraft(blank);
                   setEditing(null);
                   void perform(() => ws!.connect());
@@ -463,7 +490,10 @@ export default function CloudWorkspace() {
                     variant="outline"
                     disabled={busy || state.phase !== 'ready'}
                     onClick={() =>
-                      void perform(() => ws!.selectBusiness(state.businessId!))
+                      void perform(() => {
+                        if (!approveRecoveryNavigation()) return Promise.resolve();
+                        return ws!.selectBusiness(state.businessId!);
+                      })
                     }
                   >
                     Reload saved actions
@@ -522,7 +552,7 @@ export default function CloudWorkspace() {
                         Edit action
                       </Button>
                     )}
-                    {canEdit && <ConnectedRecovery action={a} currency={state.memberships.find(m => m.business_id === state.businessId)?.businesses?.currency ?? ''} disabled={busy || state.phase !== 'ready'} save={async input => {
+                    {canEdit && <ConnectedRecovery action={a} currency={state.memberships.find(m => m.business_id === state.businessId)?.businesses?.currency ?? ''} disabled={busy || state.phase !== 'ready'} onDirtyChange={dirty => setDirtyRecoveryActions(current => updateDirtyRecoveryActions(current, a.id, dirty))} save={async input => {
                       setBusy(true); setMessage('');
                       try { return await ws!.recordRecovery(a.id, input); }
                       catch (error) { setMessage(errorText(error)); throw error; }
@@ -629,6 +659,7 @@ export default function CloudWorkspace() {
                       busy || state.phase !== 'ready' || state.offset === 0
                     }
                     onClick={() => {
+                      if (!approveRecoveryNavigation()) return;
                       setEditing(null);
                       setDraft(blank);
                       void perform(() =>
@@ -645,6 +676,7 @@ export default function CloudWorkspace() {
                     variant="outline"
                     disabled={busy || state.phase !== 'ready' || !state.hasMore}
                     onClick={() => {
+                      if (!approveRecoveryNavigation()) return;
                       setEditing(null);
                       setDraft(blank);
                       void perform(() =>
@@ -704,7 +736,7 @@ export default function CloudWorkspace() {
                           await ws!.resolveConflict(draft);
                         else if (editing) await ws!.save(editing, draft);
                         else {
-                          await createAndRefresh(draft);
+                          if (await createAndRefresh(draft) === false) return;
                         }
                         setEditing(null);
                         setDraft(blank);

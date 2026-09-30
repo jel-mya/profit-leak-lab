@@ -458,3 +458,10 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Preserved the real connected workspace UI and moved the historical synthetic run114 fixture into a maintained optional browser harness. Added one-command Vite fixture startup, automatic teardown and a local Chromium browser runner.
 - Observed 11/11 real-browser checks pass using **simulated** Auth and port responses: editor/member action paging, unsaved recovery warnings and guarded navigation, saved entry clearing, viewer restrictions, sign-out/revocation clearing and conflict/uncertain outcome acknowledgement without replays.
 - The harness is optional and uses a locally supplied Puppeteer package; standard unit/CI checks require no browser installation. This does **not** satisfy the live Supabase Auth/PostgREST and multi-connection release gates or authorise real customer data.
+
+
+## Consolidated synthetic browser CI gate — 30 September 2026
+
+- Reconciled concurrent Bonnie browser-acceptance work from canonical `870a8ee` rather than replacing or overwriting it. The existing optional Puppeteer fixture retains its recorded 11 successful synthetic checks.
+- Added a complementary dependency-free, headless-Chrome `npm run test:browser:synthetic` runner using the same Auth/Supabase mock fixture. It passed all eight synthetic browser scenarios locally with process exit code 0 and no abandoned synthetic browser processes.
+- Added this second runner as a required GitHub CI step, plus separate documentation on the scope and remaining live release gates. This does not prove deployed Next routing, real Supabase RLS or multi-connection locking.

@@ -38,7 +38,7 @@ Open **Retention review** in the top navigation or visit `/retentions`. This loc
 
 ## Optional synthetic connected-workspace browser checks
 
-The opt-in `npm run test:browser:pilot` command uses a separate, fake Auth/adapter fixture to exercise the **actual** workspace UI in local Chromium. It requires a locally installed browser and Puppeteer, so it is not part of the default CI suite. See the [synthetic browser fixture instructions](integration/browser-fixture/README.md). This is **not** a substitute for live Supabase security verification.
+The dependency-free `npm run test:browser:synthetic` command uses a local Chrome/Edge/Chromium browser with synthetic Auth and a simulated Supabase port to exercise the actual workspace UI. Its eight-case regression gate runs in CI. An optional, complementary `npm run test:browser:pilot` suite checks 11 further fixture assertions when Puppeteer is installed locally; see the [optional fixture instructions](integration/browser-fixture/README.md). Both suites reuse the same fake fixture, require no customer records, and are **not** substitutes for [live Supabase security verification](docs/pilot-readiness.md). See [reproducible CI browser acceptance](docs/browser-acceptance.md).
 
 ## Deploy and persistence
 

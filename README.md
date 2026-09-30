@@ -20,6 +20,8 @@ Open the URL printed by the development server. `npm run build` produces a Cloud
 
 `npm test` includes executable PostgreSQL tenant-isolation tests. Run just those with `npm run test:db`. They load every migration in filename order into an ephemeral PGlite database, exercise real grants/RLS using non-superuser roles, and discard all synthetic records on exit. They require no Supabase account, credentials, Docker or database files. See [database test scope](docs/architecture.md#database-security-tests).
 
+Run `npm run test:browser:synthetic` to check connected workspace behaviour using a fresh local headless browser and mock Auth/Supabase transport. Chrome, Chromium or Edge must be installed. This tests realistic React interactions but **does not** verify live Supabase or actual deployed routing. See the [repeatable browser acceptance scope](docs/browser-acceptance.md).
+
 ## Use
 
 The initial dataset is explicitly fictional, fixed at 6 September 2026. It shows A$11,450 requiring investigation: A$10,200 overdue receivables plus A$1,250 potential extra supplier payments. A$1,600 labour variance is shown separately to avoid adding overlapping job costs.

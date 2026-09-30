@@ -19,6 +19,15 @@ jobs:
       - run: node scripts/check-repository.mjs
       - run: npm test
       - run: npm --prefix frontend run lint
+      - name: Verify synthetic browser acceptance
+        timeout-minutes: 2
+        run: |
+          browser="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          if [ -z "$browser" ]; then
+            echo "Headless browser unavailable; synthetic browser gate cannot pass."
+            exit 1
+          fi
+          CHROME_BIN="$browser" npm run test:browser:synthetic
       - run: npm run build
       - run: node scripts/check-csv-worker.mjs
       - name: Verify production HTTP security

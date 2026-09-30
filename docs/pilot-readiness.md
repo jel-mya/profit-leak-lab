@@ -8,6 +8,12 @@ The connected pilot includes verified sign-in, explicit business selection/onboa
 
 Canonical commit `f42baab36224b7b7f141bc3ccaee99f0d309ca2b` passed [GitHub verification run 34696153408](https://github.com/jel-mya/profit-leak-lab/actions/runs/34696153408). That workflow installs locked dependencies, scans repository hygiene, runs unit/PostgreSQL tests, lints, builds the frontend and checks the emitted CSV worker and local production HTTP security. The suite contains 193 tests at this commit. This evidence covers a local Worker and synthetic PostgreSQL/Auth shims, not a deployed Supabase project or browser interaction.
 
+## Repeatable synthetic browser gate — 30 September 2026
+
+An opt-in `npm run test:browser:synthetic` browser acceptance check now launches the actual connected React workspace in an isolated local Vite fixture using synthetic Auth and a synthetic Supabase port. The locally executed test passed 8/8 cases: editor recovery save, viewer read-only controls, revision-conflict review, uncertain-save review without replay, unsaved-navigation cancellation, bounded action pagination, invalid-recovery rejection before a write and remote access loss. The check exits cleanly and has been added to the GitHub `verify` workflow. See [browser acceptance](browser-acceptance.md) for prerequisites, scope and limitations.
+
+This makes a subset of UI regression checks repeatable, **not** a live or native-route pilot approval. Browser Back/Forward, native refresh/close dialog handling, actual configured Next route navigation and real Supabase service isolation remain open.
+
 ## Remaining release work
 
 1. Provision a disposable synthetic Supabase project and apply every committed migration. The recovery columns are required by current action reads. Follow [live Supabase checks](live-supabase-checks.md), supplying credentials privately and using its explicit synthetic-only gates.

@@ -8,6 +8,7 @@
     "test:live:writes": "node integration/run-supabase-read-checks.mjs --writes",
     "test:live:reads": "node integration/run-supabase-read-checks.mjs",
     "test:db": "node --test tests/database.test.mjs",
+    "test:browser:pilot": "node integration/browser-fixture/pilot.browser.mjs",
     "dev": "npm --prefix frontend run dev",
     "build": "npm --prefix frontend run build"
   },

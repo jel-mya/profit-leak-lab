@@ -452,3 +452,9 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 - Repository hygiene scanner passed for 172 tracked/new files; `git diff --check` produced no errors.
 - A built Cloudflare-compatible Worker, run locally with workspace configuration disabled, returned HTTP 200 and a CSP header for `/`, `/retentions` and `/workspace`; the retention route contained its expected heading.
 - No credentials, payment actions, customer records or tax assertions are required. Interactive browser QA, live Supabase integration and production hosting remain unverified and are **not** claimed complete.
+
+## Synthetic browser acceptance increment — 30 September 2026
+
+- Preserved the real connected workspace UI and moved the historical synthetic run114 fixture into a maintained optional browser harness. Added one-command Vite fixture startup, automatic teardown and a local Chromium browser runner.
+- Observed 11/11 real-browser checks pass using **simulated** Auth and port responses: editor/member action paging, unsaved recovery warnings and guarded navigation, saved entry clearing, viewer restrictions, sign-out/revocation clearing and conflict/uncertain outcome acknowledgement without replays.
+- The harness is optional and uses a locally supplied Puppeteer package; standard unit/CI checks require no browser installation. This does **not** satisfy the live Supabase Auth/PostgREST and multi-connection release gates or authorise real customer data.

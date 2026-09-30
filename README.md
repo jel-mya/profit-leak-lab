@@ -36,6 +36,10 @@ For action filters, recovery corrections and session-retention limits, follow th
 
 Open **Retention review** in the top navigation or visit `/retentions`. This local-browser preview accepts a separate CSV of unique retention release tranches, then identifies remaining balances with user-listed release dates reached or passed. It does not assume money is recoverable, calculate GST, alter dashboard totals or upload records. Dates must be checked against contract/payment evidence, and all amounts must have one declared currency and tax basis. See [retention review scope](docs/retention-review.md).
 
+## Optional synthetic connected-workspace browser checks
+
+The opt-in `npm run test:browser:pilot` command uses a separate, fake Auth/adapter fixture to exercise the **actual** workspace UI in local Chromium. It requires a locally installed browser and Puppeteer, so it is not part of the default CI suite. See the [synthetic browser fixture instructions](integration/browser-fixture/README.md). This is **not** a substitute for live Supabase security verification.
+
 ## Deploy and persistence
 
 Cloudflare-compatible Worker build: deploy `frontend/dist/server/wrangler.json` with Wrangler after configuring your own approved Cloudflare project. Do not deploy the development server. The optional Sites preview uses the non-secret project metadata in `frontend/.openai/hosting.json`; GitHub remains canonical. Hosting source mirrors must contain the exact canonical commit and must not become a second development codebase.

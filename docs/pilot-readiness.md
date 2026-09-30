@@ -17,3 +17,9 @@ Canonical commit `f42baab36224b7b7f141bc3ccaee99f0d309ca2b` passed [GitHub verif
 5. Review the recorded evidence before enabling cloud configuration or accepting customer records. Preview publishing remains separately disabled; a successful repository push does not update the hosted preview.
 
 Cross-session source reconciliation, raw-import persistence, billing and automatic accounting writes are not part of this implemented pilot. Keep them out of pilot readiness claims.
+
+## Reusable synthetic UI browser acceptance — 30 September 2026
+
+Promoted the earlier untracked run114 test fixture to `integration/browser-fixture/`, with an optional reproducible `npm run test:browser:pilot` command. On JHomeNuc, the command started its own localhost Vite fixture, exercised the actual connected workspace React component in headless Chrome and completed **11/11 synthetic browser acceptance checks**. These cover editor membership and pagination, unsaved-recovery warnings, navigation prevention, successful single-write recovery, viewer restrictions, rapid local clearance after simulated sign-out/revocation, and explicit conflict/uncertain-response review without automatic write replay.
+
+This is **mocked** Auth and a simulated Supabase adapter, not a live project or verified production permission boundary. The full live Supabase Auth/PostgREST/RLS and multi-connection gates listed above remain outstanding. The optional local browser harness depends on locally available Puppeteer/Chrome and is not part of the standard cross-platform CI pipeline; see `integration/browser-fixture/README.md`. No production configuration, deployment or real customer records changed.

@@ -11,7 +11,7 @@
 1. Persist actions safely: local SQL isolation, revision-checked updates, client-immutable history and starter-business onboarding now pass tests. Opt-in Supabase Auth and UI onboarding/conflict handling are implemented and disabled by default. Repeat isolation/concurrency cases through the actual Supabase API before collecting real customer data.
 2. Import reporting context is implemented: mapping, preview, explicit snapshot/cumulative/period dates, currency checks, worker parsing, pagination and version metadata in downloads. Remaining: end-to-end browser verification when authorised and cross-session source-version persistence after the live-data gate. Do not infer periods or silently filter mismatched reports.
 3. Session exception lifecycle is implemented: source presence/current-finding reconciliation, original reporting context, closure notes, user-reported recovery records and correction history, plus status/overdue/incomplete-detail triage. Server-enforced recovery history, revision coordination and connected entry/review controls are implemented but disabled. Remaining: browser/live verification and cross-session source reconciliation. See docs/pilot-readiness.md. No recovery is inferred from closure or disappearance.
-4. Add retention and unusual-payment controls from the strategy; validate domain calculations with anonymised synthetic fixtures.
+4. Retention date review now has a standalone local-browser slice with strict CSV validation and synthetic fixtures; it is not merged into main dashboard cash signals. Remaining: verified milestone/claim model, browser QA, source-linked actions and unusual-payment controls. See docs/retention-review.md.
 5. Free Trade Money Check and original symptom-led acquisition pages; no indexed customer dashboard pages.
 6. Billing only after the user handles protected credentials/terms and pricing validation. No spending automatically.
 
@@ -443,3 +443,12 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 
 - Recovery detail summaries now show Unsaved entry whenever an amount, date or evidence field contains input, including when collapsed. A best-effort beforeunload warning remains until successful save, explicit discard or component removal.
 - Lint and production build checked. No additional unit test for this small event-listener change; browser warning behaviour remains unverified and browser-dependent. No draft persistence, live configuration or publishing change.
+
+
+## Verified local increment — 30 September 2026
+
+- Implemented the local-browser retention review engine, strict CSV import, standalone /retentions screen, homepage link, read-only JSON export and documentation in a separate Bonnie worktree.
+- Full `npm test`: 212 tests passed, zero failures (including 7 dedicated retention tests). Frontend lint: zero errors and zero warnings. Production `npm run build`: passed with the `/retentions` route emitted.
+- Repository hygiene scanner passed for 172 tracked/new files; `git diff --check` produced no errors.
+- A built Cloudflare-compatible Worker, run locally with workspace configuration disabled, returned HTTP 200 and a CSP header for `/`, `/retentions` and `/workspace`; the retention route contained its expected heading.
+- No credentials, payment actions, customer records or tax assertions are required. Interactive browser QA, live Supabase integration and production hosting remain unverified and are **not** claimed complete.

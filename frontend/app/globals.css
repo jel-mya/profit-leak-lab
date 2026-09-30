@@ -727,3 +727,47 @@ td { font-variant-numeric: tabular-nums; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0s !important; animation-duration: 0s !important; }
 }
+
+/* Standalone local retention review: same workshop palette as financial control room. */
+.retention-review { width: min(1280px, calc(100% - 2rem)); margin: 1.5rem auto 4rem; }
+.retention-review .heading-row { margin-bottom: 1.5rem; }
+.retention-review .heading-row a { color: #f5a623; font-weight: 700; }
+.retention-panel {
+  background: var(--card, white); border: 1px solid #b4b9b1;
+  border-radius: 0.5rem; padding: 1.5rem; margin: 1.2rem 0;
+  overflow-x: auto;
+}
+.retention-panel h2 { font-weight: 700; font-size: 1.25rem; margin-bottom: 1rem; }
+.retention-fields, .retention-actions { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.retention-fields label, .retention-upload {
+  display: flex; flex-direction: column; gap: 0.4rem; font-weight: 600;
+}
+.retention-fields input, .retention-fields select, .retention-upload input {
+  border: 1px solid #828c82; border-radius: 0.25rem;
+  min-height: 44px; padding: 0.4rem 0.6rem; max-width: 100%;
+}
+.retention-check {
+  display: flex; gap: 0.7rem; align-items: flex-start;
+  line-height: 1.5; margin-top: 1rem; max-width: 90ch;
+}
+.retention-check input { min-width: 20px; min-height: 20px; margin-top: 0.15rem; }
+.retention-panel .muted { margin: 1rem 0; max-width: 95ch; }
+
+.retention-upload { margin: 1rem 0; }
+.retention-actions { margin-top: 1.1rem; }
+.retention-metrics {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+  gap: 0.8rem; margin: 1.3rem 0;
+}
+.retention-metrics > div {
+  display: flex; flex-direction: column; gap: 0.3rem;
+  border-left: 4px solid #f5a623; padding: 0.8rem 1rem;
+  background: #f2f0e9; color: #252a27;
+}
+.retention-metrics span, .retention-metrics small { font-size: 0.88rem; }
+.retention-metrics strong { font-size: 1.45rem; font-variant-numeric: tabular-nums; }
+.retention-panel table { min-width: 820px; }
+@media (max-width: 650px) {
+  .retention-panel { padding: 1rem; }
+  .retention-review .heading-row { align-items: start; }
+}

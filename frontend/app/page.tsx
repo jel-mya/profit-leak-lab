@@ -524,6 +524,7 @@ export default function Home() {
         <span className="session-tag">
           <ShieldCheck size={15} /> {mode} · browser memory only
         </span>
+        <Link href="/retentions">Retention review</Link>
         <Link href="/workspace">Connected workspace</Link>
       </header>
       <main id="main">

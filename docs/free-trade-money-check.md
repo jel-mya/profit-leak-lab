@@ -104,3 +104,17 @@ A future implementation is acceptable only when:
 ## Release boundary
 
 This growth asset does not change the outstanding release gates: disposable live Supabase Auth/PostgREST/RLS verification, true multi-connection/concurrency verification, native-route and real close/refresh browser verification, and customer-data operational/privacy review.
+
+## Implemented branch build
+
+The `/money-check` route now provides the anonymous ten-question check, all-answer explanations, evidence suggestions and links to local review tools. Answers live only in React page memory: no storage, network submissions, analytics, identity fields or file inputs. Editing an answer clears the old result; Start again clears all answers. The existing no-index policy remains in place. This is a branch build, not a production release.
+
+The transparent product heuristic uses the question polarity above. Questions 1, 2, 5 and 7 are higher-priority symptoms when answered Yes. Two higher-priority symptoms or five total symptoms produce Priority review recommended. One higher-priority symptom, two total symptoms or two Not sure answers produce Review recommended. Otherwise the result is Lower immediate review priority. These thresholds prioritise investigation; they are not a validated financial risk score. Not sure never counts as a confirmed symptom. All ten answers remain available in the result.
+
+Variation reconciliation, changed/unfamiliar supplier payments and retention entitlement remain manual evidence checks. This build does not advertise the unmerged unusual-payment branch as available.
+
+### Validation for this increment
+
+All 221 repository tests, frontend lint/type checks, build, repository hygiene, emitted CSV worker smoke and eight existing synthetic browser scenarios passed. The built app also passed loopback production HTTP checks for `/`, `/workspace`, `/retentions` and `/money-check` with fresh script nonces and the connected workspace disabled.
+
+Chrome screen captures and coordinate click scripts on the local production build verified: incomplete submission focuses the first unanswered radio; all Not sure answers produce Review recommended with zero reported symptoms; protective answers produce the qualified lower priority; two higher-priority symptoms produce priority review; all ten answer explanations remain visible on demand; editing clears the old result; restart and refresh clear answers; native arrow-key radio selection works; the local demo link and return link work; and desktop/390px mobile views have no horizontal overflow. No questionnaire POST requests, local/session storage writes or application runtime exceptions were observed. These targeted checks do not close the broader live-service, concurrency or cross-browser release gates.

@@ -1,12 +1,10 @@
-import { validateRows } from './engine.mjs';
-
-const normaliseInvoice = value => value.toUpperCase().replace(/[\s\-/#.]/g, '');
+import { invoiceReference, validateRows } from './engine.mjs';
 
 export function reviewUnusualPayments(rows) {
   const payments = validateRows('payments', rows);
   const groups = new Map();
   for (const payment of payments) {
-    const key = JSON.stringify([payment.supplierId, normaliseInvoice(payment.invoice)]);
+    const key = JSON.stringify([payment.supplierId, invoiceReference(payment.invoice)]);
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(payment);
   }

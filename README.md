@@ -32,6 +32,15 @@ CSV file inspection and column mapping run in a cancellable background worker. A
 
 For action filters, recovery corrections and session-retention limits, follow the [session review guide](docs/session-review.md).
 
+## Different-amount supplier payment review
+
+The Supplier payments tab also flags the same supplier and invoice reference
+with different positive payment amounts. Review the invoice, credits and
+payment evidence; valid instalments or adjustments may explain the match.
+These findings do not quantify loss or change the headline cash total. Track
+creates a separate source-linked, unquantified action. See the
+[payment review scope](docs/unusual-payment-review.md).
+
 ## Standalone retention date review
 
 Open **Retention review** in the top navigation or visit `/retentions`. This local-browser preview accepts a separate CSV of unique retention release tranches, then identifies remaining balances with user-listed release dates reached or passed. It does not assume money is recoverable, calculate GST, alter dashboard totals or upload records. Dates must be checked against contract/payment evidence, and all amounts must have one declared currency and tax basis. See [retention review scope](docs/retention-review.md).

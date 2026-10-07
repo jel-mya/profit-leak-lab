@@ -69,6 +69,7 @@ import {
 } from '../../core/recovery-draft.mjs';
 import { createCsvProcessor, type CsvProcessor } from '../../core/csv-task.mjs';
 import { demo, demoDate } from '../../core/demo.mjs';
+import { reviewUnusualPayments } from '../../core/unusual-payments.mjs';
 import { template } from '../../core/csv.mjs';
 import { useReviewTool } from '@/lib/use-review-tool';
 
@@ -356,7 +357,8 @@ export default function Home() {
     () => analyse(data, asOf, target),
     [data, asOf, target],
   );
-  const currentFindings = useMemo(() => findingKeys(result), [result]);
+  const unusualPayments = useMemo(() => reviewUnusualPayments(data.payments), [data.payments]);
+  const currentFindings = useMemo(() => findingKeys(result, unusualPayments), [result, unusualPayments]);
   const health = controlHealth(answers);
   useReviewTool({
     currency,
@@ -913,6 +915,37 @@ export default function Home() {
                 />
               )}
             </section>
+            <section className="panel">
+              <h2>Different amounts for the same invoice</h2>
+              <p className="muted">
+                Same supplier ID and normalised invoice reference, with different
+                positive payment amounts. These may be valid instalments or
+                adjustments. Check the invoice, credits and payment evidence.
+                No loss or recoverable amount is calculated, and these findings
+                are excluded from the money requiring investigation total.
+              </p>
+              {unusualPayments.length === 0 ? (
+                <p>{result.coverage.payments > 0
+                  ? `No different-amount matches in ${result.coverage.payments} loaded payments. This does not rule out other payment errors.`
+                  : 'No records loaded. Import a supplier payments CSV to check this control.'}</p>
+              ) : (
+                <Grid
+                  key={dataVersion}
+                  headers={['Supplier', 'Invoice', 'Distinct payment amounts', 'Source IDs', 'Action']}
+                  rows={unusualPayments.map((finding) => [
+                    finding.supplier,
+                    finding.invoice,
+                    finding.amounts.map(cash).join(', '),
+                    finding.paymentIds.join(', '),
+                    track(
+                      `Review different payment amounts: ${finding.supplier} / ${finding.invoice}`,
+                      actionSource('payments', finding.paymentIds, 0, currency, asOf, target,
+                        sourceVersions.payments, 'unusual-payment'),
+                    ),
+                  ])}
+                />
+              )}
+            </section>
           </TabsContent>
           <TabsContent value="labour">
             <section className="panel">
@@ -1072,6 +1105,9 @@ export default function Home() {
                         )}
                       </p>
                       <p className="muted">
+                        {a.source.findingKind === 'unusual-payment' ? (
+                          <>Tracked {a.source.asOf}. Different payment amounts require evidence review; no loss or recoverable amount was quantified at tracking.</>
+                        ) : (<>
                         Tracked {a.source.asOf} ·{' '}
                         {new Intl.NumberFormat('en-AU', {
                           style: 'currency',
@@ -1079,6 +1115,7 @@ export default function Home() {
                         }).format(a.source.amountMinorUnits / 100)}{' '}
                         at tracking. This is a review amount, not confirmed loss
                         or recovery.
+                        </>)}
                       </p>
                       <p className="muted">
                         {currentFindings.has(a.source.key) ? 'The same source IDs still trigger an exception in the current review.' : 'No exact matching exception in the current review. Records, grouping or settings may have changed; this does not confirm resolution or recovery.'}

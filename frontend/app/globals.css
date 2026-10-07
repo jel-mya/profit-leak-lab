@@ -771,3 +771,40 @@ td { font-variant-numeric: tabular-nums; }
   .retention-panel { padding: 1rem; }
   .retention-review .heading-row { align-items: start; }
 }
+
+/* Anonymous Trade Money Check. Native radio groups remain keyboard accessible. */
+.money-check { width: min(920px, calc(100% - 2rem)); margin: 2rem auto 4rem; }
+.money-check-intro { max-width: 760px; margin-bottom: 2rem; }
+.money-check h1 { font-size: clamp(2rem, 4vw, 3rem); line-height: 1.12; margin: 0.7rem 0 1.2rem; }
+.money-check p { line-height: 1.6; margin: 0.7rem 0; }
+.money-check-lead { font-size: 1.15rem; }
+.money-check-trust { font-weight: 700; }
+.money-check-intro button { margin-top: 0.8rem; }
+.money-check-panel { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 1.5rem; margin: 1.5rem 0; }
+.money-check h2 { font-size: 1.5rem; font-weight: 800; line-height: 1.3; }
+.money-check h3 { font-size: 1.15rem; font-weight: 750; margin: 1.8rem 0 0.5rem; }
+.check-progress { font-weight: 700; }
+.check-question { min-width: 0; border: 0; border-top: 1px solid var(--border); padding: 1.2rem 0; }
+.check-question legend { float: left; width: 100%; margin-bottom: 0.8rem; font-weight: 650; line-height: 1.5; }
+.check-question legend span { color: #864008; }
+.check-options { clear: both; display: flex; flex-wrap: wrap; gap: 0.65rem; }
+.check-options label { display: flex; align-items: center; gap: 0.65rem; min-height: 44px; padding: 0.6rem 1rem; border: 1px solid #828c82; border-radius: 4px; cursor: pointer; }
+.check-options label:has(input:checked) { background: #fff1d8; border-color: #864008; }
+.check-options input { width: 18px; height: 18px; accent-color: #864008; }
+.check-options label:focus-within, .money-check summary:focus-visible, .check-primary-link:focus-visible { outline: 3px solid #864008; outline-offset: 3px; }
+.check-actions { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-top: 1.2rem; }
+.check-error { color: #a32f24; font-weight: 700; }
+.check-result { border-top: 5px solid #f5a623; scroll-margin-top: 1rem; }
+.check-result h2:focus { outline: 2px solid #864008; outline-offset: 4px; }
+.money-check summary { cursor: pointer; min-height: 44px; padding: 0.7rem 0; font-weight: 700; }
+.check-responses { list-style: decimal; padding-left: 1.5rem; }
+.check-responses li, .check-evidence li { margin: 1rem 0; }
+.check-evidence { list-style: disc; padding-left: 1.2rem; }
+.money-check a:not(.check-primary-link) { text-decoration: underline; text-underline-offset: 3px; }
+.check-primary-link { background: #f5a623; color: #252a27; font-weight: 700; min-height: 44px; border-radius: 4px; padding: 0.8rem 1rem; }
+@media (max-width: 600px) {
+  .money-check { margin-top: 1.2rem; }
+  .money-check-panel { padding: 1rem; }
+  .check-options { gap: 0.5rem; }
+  .check-options label { padding: 0.6rem 0.8rem; }
+}

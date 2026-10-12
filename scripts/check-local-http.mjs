@@ -4,7 +4,7 @@ assert.equal(base.protocol, 'http:');
 assert.equal(base.hostname, '127.0.0.1', 'Only loopback smoke targets are allowed');
 assert.equal(base.username + base.password + base.search + base.hash, '');
 const nonces = new Set();
-for (const route of ['/', '/workspace', '/']) {
+for (const route of ['/', '/workspace', '/retentions', '/money-check', '/']) {
   const response = await fetch(new URL(route, base), { signal: AbortSignal.timeout(15000), redirect: 'error' });
   assert.equal(response.status, 200, 'Route failed');
   assert.equal(response.headers.get('cache-control'), 'no-store');
@@ -17,6 +17,7 @@ for (const route of ['/', '/workspace', '/']) {
   nonces.add(nonce);
   assert.ok(csp.includes("frame-ancestors 'none'"));
   const html = await response.text();
+  if (route === '/money-check') assert.ok(html.includes('Where is the money leaking from your trade business?'), 'Missing money check page');
   const scripts = [...html.matchAll(/<script\b[^>]*>/g)].map(match => match[0]);
   assert.ok(scripts.length > 0, 'Missing hydration scripts');
   assert.ok(scripts.every(script => script.includes(`nonce="${nonce}"`)), 'Script nonce does not match response policy');

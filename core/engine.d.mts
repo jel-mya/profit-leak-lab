@@ -10,6 +10,7 @@ export const columns: Record<Section, string[]>;
 export const controls: string[];
 export function dateValue(value: string): number;
 export function money(value: string | number): number;
+export function invoiceReference(value: string): string;
 export function validateRows(section: string, rows: InputRow[]): Record<string, string | number>[];
 export function analyse(input: Input, asOf: string, targetMargin?: number): {
   jobs: Job[]; debtors: Debtor[]; duplicates: Duplicate[]; labour: Labour[];

@@ -1,7 +1,41 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { actionSource, sourceReviewStatus } from '../core/action-source.mjs';
+import { actionSource, findingKeys, sourceReviewStatus } from '../core/action-source.mjs';
+import { reviewUnusualPayments } from '../core/unusual-payments.mjs';
+import { analyse } from '../core/engine.mjs';
 const make = (section = 'payments', ids = ['P2', 'P1']) => actionSource(section, ids, 125000, 'AUD', '2026-09-07', 25, 1);
+test('unquantified payment findings keep a distinct, stable action identity and export marker', () => {
+  const source = actionSource('payments', ['P2', 'P1'], 0, 'AUD', '2026-09-07', 25, 1, 'unusual-payment');
+  const reordered = actionSource('payments', ['P1', 'P2'], 0, 'AUD', '2026-09-07', 25, 1, 'unusual-payment');
+  assert.equal(source.key, reordered.key);
+  assert.notEqual(source.key, make().key);
+  assert.equal(source.amountMinorUnits, 0);
+  assert.equal(JSON.parse(JSON.stringify(source)).findingKind, 'unusual-payment');
+  assert.deepEqual(source.recordIds, ['P1', 'P2']);
+  assert.match(sourceReviewStatus(source, { payments: 2 }, 'AUD', '2026-09-07', 25), /reimported/);
+  for (const [section, amount, kind] of [
+    ['jobs', 0, 'unusual-payment'], ['payments', 100, 'unusual-payment'], ['payments', 0, 'unknown'],
+  ]) assert.throws(() => actionSource(section, ['P1'], amount, 'AUD', '2026-09-07', 25, 1, kind), /Invalid unquantified/);
+});
+
+test('different-amount actions reconcile current sources independently of exact duplicates', () => {
+  const rows = [100, 100, 200].map((amount, index) => ({
+    id: `P${index + 1}`, supplierId: 'S1', supplier: 'Fictional Supplier', invoice: 'INV-204', amount,
+  }));
+  const makeUnusual = ids => actionSource('payments', ids, 0, 'AUD', '2026-09-07', 25, 1, 'unusual-payment');
+  const original = makeUnusual(['P1', 'P2', 'P3']);
+  const review = data => findingKeys(analyse({ payments: data }, '2026-09-07'), reviewUnusualPayments(data));
+  assert.equal(review(rows).has(original.key), true);
+  assert.equal(review(rows.toReversed()).has(original.key), true);
+  assert.equal(review(rows).has(make('payments', ['P1', 'P2']).key), true);
+  assert.equal(review(rows).has(make('payments', ['P1', 'P2', 'P3']).key), false);
+  const equalised = rows.map(row => ({ ...row, amount: 100 }));
+  assert.equal(review(equalised).has(original.key), false);
+  assert.equal(review(equalised).has(make('payments', ['P1', 'P2', 'P3']).key), true);
+  assert.equal(review(rows.slice(1)).has(original.key), false);
+  assert.equal(review([]).has(original.key), false);
+  assert.equal(original.findingKind, 'unusual-payment');
+});
 test('source identity is stable across row order and cannot collide through separators', () => {
   assert.equal(make().key, make('payments', ['P1', 'P2']).key);
   assert.notEqual(make('payments', ['a:b', 'c']).key, make('payments', ['a', 'b:c']).key);

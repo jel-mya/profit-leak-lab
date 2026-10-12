@@ -6,7 +6,7 @@ export const columns = {
   labour: ['id', 'jobId', 'person', 'claimedHours', 'approvedHours', 'rate'],
 };
 const cashFields = new Set(['revenue', 'materials', 'subcontractors', 'labour', 'other', 'outstanding', 'amount', 'rate']);
-function invoiceReference(value) {
+export function invoiceReference(value) {
   const reference = value.toUpperCase().replace(/[\s\-/#.]/g, '');
   if (!/[\p{L}\p{N}]/u.test(reference)) throw new Error('Invoice reference must contain letters or numbers.');
   return reference;

@@ -11,9 +11,15 @@
 1. Persist actions safely: local SQL isolation, revision-checked updates, client-immutable history and starter-business onboarding now pass tests. Opt-in Supabase Auth and UI onboarding/conflict handling are implemented and disabled by default. Repeat isolation/concurrency cases through the actual Supabase API before collecting real customer data.
 2. Import reporting context is implemented: mapping, preview, explicit snapshot/cumulative/period dates, currency checks, worker parsing, pagination and version metadata in downloads. Remaining: end-to-end browser verification when authorised and cross-session source-version persistence after the live-data gate. Do not infer periods or silently filter mismatched reports.
 3. Session exception lifecycle is implemented: source presence/current-finding reconciliation, original reporting context, closure notes, user-reported recovery records and correction history, plus status/overdue/incomplete-detail triage. Server-enforced recovery history, revision coordination and connected entry/review controls are implemented but disabled. Remaining: browser/live verification and cross-session source reconciliation. See docs/pilot-readiness.md. No recovery is inferred from closure or disappearance.
-4. Retention date review now has a standalone local-browser slice with strict CSV validation and synthetic fixtures; it is not merged into main dashboard cash signals. Remaining: verified milestone/claim model, browser QA and source-linked retention actions. A separate same-invoice/different-amount supplier-payment review is implemented on the Bonnie unusual-payment branch; other unusual-payment controls remain out of scope. See docs/retention-review.md and docs/unusual-payment-review.md.
-5. Free Trade Money Check and original symptom-led acquisition pages; no indexed customer dashboard pages.
+4. Retention date review now has a standalone local-browser slice with strict CSV validation and synthetic fixtures; it is not merged into main dashboard cash signals. Remaining: verified milestone/claim model, browser QA and source-linked retention actions. A separate same-invoice/different-amount supplier-payment review is merged into canonical main; other unusual-payment controls remain out of scope. See docs/retention-review.md and docs/unusual-payment-review.md.
+5. Anonymous Free Trade Money Check is merged into canonical main. Remaining: original symptom-led acquisition pages; no indexed customer dashboard pages.
 6. Billing only after the user handles protected credentials/terms and pricing validation. No spending automatically.
+
+## Money Check guidance correction — 16 October 2026
+
+- Corrected labour evidence requests and capability text to match the implemented claimed-versus-approved hours control; job-budget comparison is explicitly unavailable.
+- Updated supplier guidance to include the merged same-invoice/different-amount review while retaining manual review and unproven-overpayment limits. Reconciled the next-work list with merged Money Check and supplier functionality.
+- All 242 automated tests pass, including two new guidance regressions. No calculation, persistence configuration or deployment changed.
 
 ## Evidence discipline
 Record actual tests, commits and deployment outcomes below; never label an unrun check passed. The repository started with only a README. Earlier packaged releases have not been recovered as source and are not claimed as implemented here.

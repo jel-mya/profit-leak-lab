@@ -46,8 +46,22 @@ test('results retain exact contributing answers and do not mutate inputs', () =>
 test('incomplete, unknown, inherited and invalid answers are rejected', () => {
   for (const input of [null, [], 'yes', {}, { ...clear(), extra: 'yes' }, { ...clear(), debtors: 'maybe' }, { ...clear(), debtors: 'toString' }, { ...clear(), debtors: { toString: () => 'yes' } }, { ...clear(), debtors: 1 }, Object.create(clear())]) assert.throws(() => reviewMoneyCheck(input), TypeError);
 });
-test('supplier and variation guidance does not promise unmerged automation', () => {
-  assert.match(moneyCheckQuestions.find(q => q.id === 'suppliers').capability, /separate manual review/);
+test('supplier and variation guidance reflects available controls and manual limits', () => {
+  assert.match(moneyCheckQuestions.find(q => q.id === 'suppliers').capability, /Unfamiliar payments still need manual review/);
   assert.match(moneyCheckQuestions.find(q => q.id === 'variations').capability, /Automated variation reconciliation is not available/);
   assert.match(moneyCheckQuestions.find(q => q.id === 'retentions').capability, /manual evidence check/);
+});
+
+
+test('labour guidance requests the inputs used by the hours variance control', () => {
+  const labour = reviewMoneyCheck({ ...clear(), labour: 'yes' }).nextChecks.find(q => q.id === 'labour');
+  assert.match(labour.evidence, /claimed hours, approved hours/);
+  assert.match(labour.evidence, /hourly rate/);
+  assert.match(labour.capability, /does not compare labour costs with job budgets/);
+});
+
+test('supplier guidance includes merged different-amount review without implying proven loss', () => {
+  const supplier = reviewMoneyCheck({ ...clear(), suppliers: 'yes' }).nextChecks.find(q => q.id === 'suppliers');
+  assert.match(supplier.capability, /same-invoice payments with different amounts/);
+  assert.match(supplier.capability, /do not prove overpayment/);
 });

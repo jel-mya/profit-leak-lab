@@ -21,6 +21,12 @@
 - Updated supplier guidance to include the merged same-invoice/different-amount review while retaining manual review and unproven-overpayment limits. Reconciled the next-work list with merged Money Check and supplier functionality.
 - All 242 automated tests pass, including two new guidance regressions. No calculation, persistence configuration or deployment changed.
 
+## Local connected-workspace browser verification — 16 October 2026
+
+- Ran `npm run test:browser:synthetic` against canonical `be5ee08`: all eight cases passed using local headless browser and synthetic Auth/data adapters. Covered editor recovery, viewer restrictions, conflict acknowledgement, uncertain-write acknowledgement, unsaved navigation, pagination, validation and access-loss clearing.
+- The first sandboxed attempt could not reach the fixture server; the same command passed outside sandbox restrictions. No customer records, protected credentials, live service or deployment used.
+- This verifies browser interactions in the synthetic fixture only. Real Supabase Auth/PostgREST isolation and concurrency, deployed routing and customer persistence remain unverified release gates.
+
 ## Evidence discipline
 Record actual tests, commits and deployment outcomes below; never label an unrun check passed. The repository started with only a README. Earlier packaged releases have not been recovered as source and are not claimed as implemented here.
 

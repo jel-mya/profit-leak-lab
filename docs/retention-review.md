@@ -20,6 +20,8 @@ Rows and calculations exist only in browser memory; refreshing clears them. JSON
 
 ## Quality and next gates
 
+If the review date is cleared or invalid after import, the page explains why results are hidden and disables download. Correcting the date restores the loaded records without importing again. This behavior is covered by the 14-case synthetic browser suite.
+
 The independent engine has fixture tests for money arithmetic, date boundaries, zero balances, duplicate tranche IDs, CSV structure, mixed currencies, size/row validation and failure cases. The page uses the existing review styling and 50-row pagination.
 
 On 21 October 2026, `npm run test:browser:synthetic` passed all 11 cases, including three retention cases against the actual React page in the local Vite fixture. These exercise file selection with synthetic CSV, required basis/currency confirmations, four release-date states, reconciled totals, currency locking, invalid replacement preservation and clearing/download disabling. The existing CI command runs these checks too. This is interaction coverage, not visual QA, retention pagination/download-content verification, deployed-route verification or live Supabase verification.

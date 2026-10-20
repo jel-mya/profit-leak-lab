@@ -300,8 +300,18 @@ try {
   await waitText('Reviewed 4 retention records.', 'output');
   await waitText('Page 1 of 1', 'nav');
   console.log('PASS: retention JSON contains all records and explicit context; replacement resets pagination.');
+  await setValue('input[type="date"]', '');
+  await waitText('Enter a valid review date', '[role="alert"]');
+  assert.equal(await evaluate("Boolean(document.querySelector('[aria-label=\"Retention results\"]'))"), false);
+  assert.equal(await evaluate("document.querySelector('input[type=\"date\"]').getAttribute('aria-invalid')"), 'true');
+  assert.equal(await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent==='Download review JSON').disabled"), true);
+  await setValue('input[type="date"]', '2026-10-20');
+  await waitText('3. Review exceptions');
+  assert.equal(await evaluate("document.querySelectorAll('tbody tr').length"), 4);
+  assert.equal(await evaluate("Boolean(document.querySelector('[role=\"alert\"]'))"), false);
+  console.log('PASS: missing review date explains hidden results and correction restores the loaded records.');
   assert.deepEqual(browserErrors.filter(Boolean), [], 'Browser runtime errors');
-  console.log('13 synthetic browser acceptance cases passed; no live service or customer records used.');
+  console.log('14 synthetic browser acceptance cases passed; no live service or customer records used.');
 } catch (error) {
   console.error(error);
   // Surface the actual failure in public check annotations, not only gated job logs.

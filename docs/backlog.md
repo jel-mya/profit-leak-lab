@@ -30,6 +30,12 @@
 ## Evidence discipline
 Record actual tests, commits and deployment outcomes below; never label an unrun check passed. The repository started with only a README. Earlier packaged releases have not been recovered as source and are not claimed as implemented here.
 
+## Retention review date feedback — 21 October 2026
+
+- Clearing a loaded retention review date now displays an accessible validation message instead of silently hiding results beneath a stale success message. Download remains disabled until the date is valid; correcting it restores the retained session records.
+- All 14 synthetic browser cases and frontend lint pass locally, including missing-date feedback and recovery without reimport. No live service or customer persistence changed.
+- Confirmed the preceding documentation commit `c99e99c` passed GitHub verify.
+
 ## Browser CI diagnostic follow-up — 21 October 2026
 
 - GitHub verify for `0fbcd58` passed unit/database tests and lint but failed browser acceptance; build and HTTP checks were consequently skipped. Local 13-case success was not CI success.

@@ -22,9 +22,10 @@ export default function RetentionReview() {
   const [busy, setBusy] = useState(false);
   const [page, setPage] = useState(0);
   const generation = useRef(0);
-  const result = useMemo(() => {
-    if (!rows) return null;
-    try { return reviewRetentions(rows, asOf); } catch { return null; }
+  const { result, reviewError } = useMemo(() => {
+    if (!rows) return { result: null, reviewError: '' };
+    try { return { result: reviewRetentions(rows, asOf), reviewError: '' }; }
+    catch { return { result: null, reviewError: 'Enter a valid review date to show results. Your loaded records are still in this session.' }; }
   }, [rows, asOf]);
   const window = pageWindow(result?.count ?? 0, page);
   const format = (cents: number) => new Intl.NumberFormat('en-AU', {
@@ -100,7 +101,7 @@ export default function RetentionReview() {
         <section className="retention-panel" aria-label="Retention import settings">
           <h2>1. Set review context</h2>
           <div className="retention-fields">
-            <label>Review date <input type="date" value={asOf} onChange={e => setAsOf(e.target.value)} /></label>
+            <label>Review date <input type="date" value={asOf} aria-invalid={Boolean(reviewError)} aria-describedby={reviewError ? 'retention-review-error' : undefined} onChange={e => setAsOf(e.target.value)} /></label>
             <label>Currency
               <select value={currency} disabled={rows !== null || busy} onChange={e => setCurrency(e.target.value)}>
                 {currencies.map(code => <option key={code} value={code}>{code}</option>)}
@@ -124,7 +125,7 @@ export default function RetentionReview() {
             <Button variant="outline" onClick={clearReview} disabled={!rows && !busy}>Clear review</Button>
             <Button onClick={downloadReview} disabled={!result}>Download review JSON</Button>
           </div>
-          {message && <output>{message}</output>}
+          {reviewError ? <p id="retention-review-error" role="alert">{reviewError}</p> : message && <output>{message}</output>}
         </section>
         {result && (
           <section className="retention-panel" aria-label="Retention results">

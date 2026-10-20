@@ -20,4 +20,8 @@ Rows and calculations exist only in browser memory; refreshing clears them. JSON
 
 ## Quality and next gates
 
-The independent engine has fixture tests for money arithmetic, date boundaries, zero balances, duplicate tranche IDs, CSV structure, mixed currencies, size/row validation and failure cases. The page uses the existing review styling and 50-row pagination. Browser interaction and any production deployment require separate verification. Future increments can link verified tranches to action tracking, add source-version reconciliation and a contract milestone model; do not merge these amounts into other cash exceptions until overlap has been explicitly resolved.
+The independent engine has fixture tests for money arithmetic, date boundaries, zero balances, duplicate tranche IDs, CSV structure, mixed currencies, size/row validation and failure cases. The page uses the existing review styling and 50-row pagination.
+
+On 21 October 2026, `npm run test:browser:synthetic` passed all 11 cases, including three retention cases against the actual React page in the local Vite fixture. These exercise file selection with synthetic CSV, required basis/currency confirmations, four release-date states, reconciled totals, currency locking, invalid replacement preservation and clearing/download disabling. The existing CI command runs these checks too. This is interaction coverage, not visual QA, retention pagination/download-content verification, deployed-route verification or live Supabase verification.
+
+Future increments can link verified tranches to action tracking, add source-version reconciliation and a contract milestone model; do not merge these amounts into other cash exceptions until overlap has been explicitly resolved.

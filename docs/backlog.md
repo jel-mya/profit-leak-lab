@@ -30,6 +30,12 @@
 ## Evidence discipline
 Record actual tests, commits and deployment outcomes below; never label an unrun check passed. The repository started with only a README. Earlier packaged releases have not been recovered as source and are not claimed as implemented here.
 
+## Retention browser regression coverage — 21 October 2026
+
+- Added the actual retention page to the local synthetic browser fixture and three acceptance cases to the existing CI browser command.
+- All 11 browser cases pass locally: eight connected-workspace cases plus retention import confirmations, date-state/totals/currency locking, and invalid replacement/clear behavior. Inputs are synthetic, generated in memory; no customer files or live services are used.
+- Visual QA, retention pagination/download-content coverage, deployed routing, source-linked retention actions and the live Supabase release gate remain open. No production configuration or preview changed.
+
 ## Resumed different-amount supplier payment review — 8 October 2026
 
 - Verified canonical main at `dbbcfe90c0c08f755945c16a8c7df3939169eac0`, its successful verify run, all 12 existing Bonnie branch heads and the absence of open PRs before selecting work. Browser regression consolidation is already on main; the unusual-payment branch contains an unused engine and is the next substantive incomplete implementation.

@@ -214,8 +214,55 @@ try {
   await waitText('Sign in to the pilot', 'main');
   assert.equal(await evaluate("document.querySelector('main')?.textContent?.includes('Saved actions')"), false);
   console.log('PASS: remote access loss clears the financial-action view.');
+
+  await command('Page.navigate', { url: fixtureUrl + '?retentions' });
+  await waitText('Review held retentions.');
+  await setValue('input[type="date"]', '2026-10-20');
+  const retentionCsv = [
+    'id,jobId,counterparty,held,released,releaseDueDate',
+    'past,SYNTHETIC-JOB,Synthetic builder,100,20,2026-10-19',
+    'today,SYNTHETIC-JOB,Synthetic builder,200,50,2026-10-20',
+    'future,SYNTHETIC-JOB,Synthetic builder,300,0,2026-10-21',
+    'released,SYNTHETIC-JOB,Synthetic builder,400,400,2026-10-01',
+  ].join('\n');
+  async function importRetention(csv) {
+    await evaluate(`(() => {
+      const input = document.querySelector('input[type="file"]');
+      const transfer = new DataTransfer();
+      transfer.items.add(new File([${JSON.stringify(csv)}], 'synthetic-retentions.csv', {type:'text/csv'}));
+      input.files = transfer.files;
+      input.dispatchEvent(new Event('change', {bubbles:true}));
+    })()`);
+  }
+  await importRetention(retentionCsv);
+  await waitText('Confirm the consistent amount/tax basis', 'output');
+  await evaluate("document.querySelectorAll('input[type=\"checkbox\"]')[0].click()");
+  await importRetention(retentionCsv);
+  await waitText('Confirm that the whole export uses the selected currency.', 'output');
+  assert.equal(await evaluate("Boolean(document.querySelector('[aria-label=\"Retention results\"]'))"), false);
+  console.log('PASS: retention import requires amount/date basis and explicit missing-column currency confirmation.');
+
+  await evaluate("document.querySelectorAll('input[type=\"checkbox\"]')[1].click()");
+  await importRetention(retentionCsv);
+  await waitText('Reviewed 4 retention records.', 'output');
+  assert.deepEqual(await evaluate("[...document.querySelectorAll('tbody tr')].map(row=>row.lastElementChild.textContent)"),
+    ['Past listed date', 'Date reached today', 'Upcoming', 'Fully released']);
+  assert.deepEqual(await evaluate("[...document.querySelectorAll('.retention-metrics strong')].map(el=>el.textContent)"),
+    ['$1,000.00', '$470.00', '$530.00', '$230.00', '$80.00']);
+  assert.equal(await evaluate("document.querySelector('select').disabled"), true);
+  console.log('PASS: retention review displays separate date states and reconciled totals and locks loaded currency.');
+
+  await importRetention(retentionCsv.replace('100,20', '100,120'));
+  await waitText('released exceeds held', 'output');
+  assert.equal(await evaluate("document.querySelectorAll('tbody tr').length"), 4);
+  assert.equal(await evaluate("document.querySelectorAll('.retention-metrics strong')[2].textContent"), '$530.00');
+  await click('Clear review');
+  assert.equal(await evaluate("Boolean(document.querySelector('[aria-label=\"Retention results\"]'))"), false);
+  assert.equal(await evaluate("document.querySelector('select').disabled"), false);
+  assert.equal(await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent==='Download review JSON').disabled"), true);
+  console.log('PASS: invalid retention replacement preserves the prior review; clearing removes results and disables download.');
   assert.deepEqual(browserErrors.filter(Boolean), [], 'Browser runtime errors');
-  console.log('8 synthetic browser acceptance cases passed; no live service or customer records used.');
+  console.log('11 synthetic browser acceptance cases passed; no live service or customer records used.');
 } catch (error) {
   console.error(error);
   process.exitCode = 1;

@@ -304,6 +304,11 @@ try {
   console.log('13 synthetic browser acceptance cases passed; no live service or customer records used.');
 } catch (error) {
   console.error(error);
+  // Surface the actual failure in public check annotations, not only gated job logs.
+  if (process.env.GITHUB_ACTIONS === 'true') {
+    const detail = String(error?.stack || error).replaceAll('%', '%25').replaceAll('\r', '%0D').replaceAll('\n', '%0A');
+    console.error(`::error title=Synthetic browser acceptance::${detail}`);
+  }
   process.exitCode = 1;
 } finally {
   if (browserClose) {

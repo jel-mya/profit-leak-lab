@@ -30,6 +30,12 @@
 ## Evidence discipline
 Record actual tests, commits and deployment outcomes below; never label an unrun check passed. The repository started with only a README. Earlier packaged releases have not been recovered as source and are not claimed as implemented here.
 
+## Browser CI diagnostic follow-up — 21 October 2026
+
+- GitHub verify for `0fbcd58` passed unit/database tests and lint but failed browser acceptance; build and HTTP checks were consequently skipped. Local 13-case success was not CI success.
+- Added escaped error-stack annotations to the synthetic browser runner in `3d80d63`, so future failures expose actionable diagnostics in check annotations. No application behavior or test assertion changed.
+- GitHub verify for `3d80d63` completed successfully, including browser acceptance, build, worker and production HTTP checks. The earlier failure did not reproduce; its cause is unknown, not claimed fixed. GitHub CLI lacked authentication and detailed prior logs were unavailable through the approved access path.
+
 ## Retention browser regression coverage — 21 October 2026
 
 Follow-up: all 13 synthetic browser cases now pass locally, including a 51-record retention review checking pagination, whole-report totals, complete JSON export with explicit context, and replacement resetting the page. Export contents are captured from the browser Blob in memory; OS file-save behavior, visual QA, deployed routing and live Supabase remain unverified. The preceding commit `04dce03` has a confirmed successful GitHub verify run.

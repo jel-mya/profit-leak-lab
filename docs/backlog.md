@@ -30,6 +30,12 @@
 ## Evidence discipline
 Record actual tests, commits and deployment outcomes below; never label an unrun check passed. The repository started with only a README. Earlier packaged releases have not been recovered as source and are not claimed as implemented here.
 
+## Action audit history browser coverage — 21 October 2026
+
+- Added synthetic history responses and browser verification of viewer access, before/after fields, actor attribution, baseline labeling, older/latest navigation, terminal-page disabling and closing the panel without recovery writes.
+- All 15 synthetic browser cases pass locally. These exercise the real workspace UI with fixture adapters; they do not establish live database history immutability or tenant isolation. Real Auth/PostgREST verification remains required.
+- Confirmed GitHub verify passed for preceding application commit `6108c92`.
+
 ## Retention review date feedback — 21 October 2026
 
 - Clearing a loaded retention review date now displays an accessible validation message instead of silently hiding results beneath a stale success message. Download remains disabled until the date is valid; correcting it restores the retained session records.

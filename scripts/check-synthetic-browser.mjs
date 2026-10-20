@@ -168,6 +168,24 @@ try {
   assert.equal(await evaluate("[...document.querySelectorAll('button')].some(x=>x.textContent.trim()==='Edit action')"), false);
   console.log('PASS: viewer cannot see edit or recovery submission controls.');
 
+  await click('View change history');
+  await waitText('Action updated · revision 2', '.history-review');
+  await waitText('Recorded by your account', '.history-review');
+  await waitText('Before: Not set', '.history-fields');
+  await waitText('After: Synthetic reviewer', '.history-fields');
+  assert.equal(await evaluate("document.querySelectorAll('.history-review input, .history-review textarea').length"), 0);
+  await click('Older changes');
+  await waitText('Tracking baseline · revision 1', '.history-review');
+  await waitText('No actor recorded for this baseline', '.history-review');
+  assert.equal(await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='Older changes').disabled"), true);
+  await click('Latest changes');
+  await waitText('Action updated · revision 2', '.history-review');
+  await click('Close history');
+  assert.equal(await evaluate("Boolean(document.querySelector('.history-review'))"), false);
+  await click('Inspect synthetic writes');
+  await waitText('Synthetic writes: 0', 'aside');
+  console.log('PASS: viewer reads immutable history fields, navigates baseline/latest pages and closes without writes.');
+
   await scenario('conflict', 'editor');
   await enterRecovery('23.00');
   await click('Save reported recovery');
@@ -311,7 +329,7 @@ try {
   assert.equal(await evaluate("Boolean(document.querySelector('[role=\"alert\"]'))"), false);
   console.log('PASS: missing review date explains hidden results and correction restores the loaded records.');
   assert.deepEqual(browserErrors.filter(Boolean), [], 'Browser runtime errors');
-  console.log('14 synthetic browser acceptance cases passed; no live service or customer records used.');
+  console.log('15 synthetic browser acceptance cases passed; no live service or customer records used.');
 } catch (error) {
   console.error(error);
   // Surface the actual failure in public check annotations, not only gated job logs.

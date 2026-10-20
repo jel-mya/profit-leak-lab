@@ -261,8 +261,47 @@ try {
   assert.equal(await evaluate("document.querySelector('select').disabled"), false);
   assert.equal(await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent==='Download review JSON').disabled"), true);
   console.log('PASS: invalid retention replacement preserves the prior review; clearing removes results and disables download.');
+  const pagedRetentions = [retentionCsv.split('\n')[0], ...Array.from({length: 51}, (_, i) =>
+    `synthetic-${i},SYNTHETIC-JOB,Synthetic builder,10,2,2026-10-19`)].join('\n');
+  await importRetention(pagedRetentions);
+  await waitText('Reviewed 51 retention records.', 'output');
+  assert.equal(await evaluate("document.querySelectorAll('tbody tr').length"), 50);
+  await click('Next');
+  await waitText('Page 2 of 2', 'nav');
+  assert.deepEqual(await evaluate("[...document.querySelectorAll('tbody tr')].map(row=>row.firstElementChild.textContent)"), ['synthetic-50']);
+  assert.equal(await evaluate("document.querySelectorAll('.retention-metrics strong')[2].textContent"), '$408.00');
+  await click('Previous');
+  await waitText('Page 1 of 2', 'nav');
+  assert.equal(await evaluate("document.querySelector('tbody tr').firstElementChild.textContent"), 'synthetic-0');
+  console.log('PASS: retention pagination preserves whole-report totals across 51 records.');
+
+  // Capture the browser-created Blob in memory, avoiding a filesystem download.
+  await evaluate(`(() => {
+    window.retentionExport = null;
+    const create = URL.createObjectURL;
+    URL.createObjectURL = blob => { window.retentionExport = blob.text(); return create(blob); };
+    HTMLAnchorElement.prototype.click = function () { window.retentionFilename = this.download; };
+  })()`);
+  await click('Download review JSON');
+  const exported = JSON.parse(await evaluate('window.retentionExport'));
+  assert.equal(await evaluate('window.retentionFilename'), 'retention-review-2026-10-20.json');
+  assert.equal(exported.reportType, 'retention-date-review');
+  assert.equal(exported.currency, 'AUD');
+  assert.equal(exported.asOf, '2026-10-20');
+  assert.equal(exported.count, 51);
+  assert.equal(exported.items.length, 51);
+  assert.equal(exported.items[50].id, 'synthetic-50');
+  assert.equal(exported.open, 40800);
+  assert.equal(exported.reviewAmount, 40800);
+  assert.match(exported.releaseDates, /not legally verified/);
+  await click('Next');
+  await waitText('Page 2 of 2', 'nav');
+  await importRetention(retentionCsv);
+  await waitText('Reviewed 4 retention records.', 'output');
+  await waitText('Page 1 of 1', 'nav');
+  console.log('PASS: retention JSON contains all records and explicit context; replacement resets pagination.');
   assert.deepEqual(browserErrors.filter(Boolean), [], 'Browser runtime errors');
-  console.log('11 synthetic browser acceptance cases passed; no live service or customer records used.');
+  console.log('13 synthetic browser acceptance cases passed; no live service or customer records used.');
 } catch (error) {
   console.error(error);
   process.exitCode = 1;

@@ -32,6 +32,8 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 
 ## Retention browser regression coverage — 21 October 2026
 
+Follow-up: all 13 synthetic browser cases now pass locally, including a 51-record retention review checking pagination, whole-report totals, complete JSON export with explicit context, and replacement resetting the page. Export contents are captured from the browser Blob in memory; OS file-save behavior, visual QA, deployed routing and live Supabase remain unverified. The preceding commit `04dce03` has a confirmed successful GitHub verify run.
+
 - Added the actual retention page to the local synthetic browser fixture and three acceptance cases to the existing CI browser command.
 - All 11 browser cases pass locally: eight connected-workspace cases plus retention import confirmations, date-state/totals/currency locking, and invalid replacement/clear behavior. Inputs are synthetic, generated in memory; no customer files or live services are used.
 - Visual QA, retention pagination/download-content coverage, deployed routing, source-linked retention actions and the live Supabase release gate remain open. No production configuration or preview changed.

@@ -24,4 +24,6 @@ The independent engine has fixture tests for money arithmetic, date boundaries, 
 
 On 21 October 2026, `npm run test:browser:synthetic` passed all 11 cases, including three retention cases against the actual React page in the local Vite fixture. These exercise file selection with synthetic CSV, required basis/currency confirmations, four release-date states, reconciled totals, currency locking, invalid replacement preservation and clearing/download disabling. The existing CI command runs these checks too. This is interaction coverage, not visual QA, retention pagination/download-content verification, deployed-route verification or live Supabase verification.
 
+Follow-up verification on 21 October extended the runner to 13 passing cases. A 51-record import verifies page boundaries, whole-report totals and replacement resetting to page one. The download check captures the actual browser-created JSON Blob in memory and verifies all 51 records, integer totals, currency, review date, filename and eligibility caveat; it does not verify the operating system saving a file. Visual QA and deployed-route verification remain open.
+
 Future increments can link verified tranches to action tracking, add source-version reconciliation and a contract milestone model; do not merge these amounts into other cash exceptions until overlap has been explicitly resolved.

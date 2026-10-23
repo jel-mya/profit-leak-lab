@@ -32,6 +32,8 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 
 ## Session lifecycle browser coverage — 24 October 2026
 
+Recovery follow-up: all 22 local synthetic browser cases pass. Saving a synthetic AUD 12.34 recovery then correcting it to zero retains both revisions, the original evidence and the correction explanation in the downloaded before/after chain. The history UI displays both amounts and the action remains Investigating. This verifies session behavior, not live database immutability; source-linked reconciliation browser coverage remains open.
+
 - All 21 local synthetic browser cases pass. New coverage exercises manual action creation, refusal to resolve without evidence, evidence-backed closure, unfinished/closed filtering, export of a closed action while hidden by the filter, no inferred recovery, and reopening into the unfinished view.
 - Initial test selectors incorrectly targeted an explicit status role and included a select icon; corrected the test selectors. No application change, customer records or live service used. Source-linked reconciliation and recovery-correction browser coverage remain open, alongside live Auth/PostgREST verification.
 

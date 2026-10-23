@@ -454,8 +454,31 @@ try {
     {section:'debtors', version:1, reporting:{kind:'snapshot',start:null,end:'2026-10-19'}, count:1,currency:'AUD'},
   ]);
   console.log('PASS: debtor snapshot date is independent of due date and action download retains all three reporting contexts without cancelled imports.');
+  await setValue('[aria-label="New action"]', 'Synthetic follow-up');
+  await click('Add action');
+  await waitText('Synthetic follow-up', '.action-card');
+  await chooseOption('Status for Synthetic follow-up', 'Resolved');
+  await waitText('Add an evidence / outcome note', 'output.feedback');
+  assert.equal(await evaluate("document.querySelector('[aria-label=\"Status for Synthetic follow-up\"] [data-slot=\"select-value\"]').textContent.trim()"), 'Open');
+  await setValue('.action-fields label:last-child input', 'Synthetic evidence reviewed; no recovery claimed.');
+  await chooseOption('Status for Synthetic follow-up', 'Resolved');
+  await chooseOption('Action status filter', 'Unfinished');
+  await waitText('No actions match this view.');
+  await click('Download actions');
+  const closedExport = JSON.parse(await evaluate('window.actionExport'));
+  assert.equal(closedExport.actions.length, 1);
+  assert.equal(closedExport.actions[0].status, 'Resolved');
+  assert.equal(closedExport.actions[0].note, 'Synthetic evidence reviewed; no recovery claimed.');
+  assert.equal(closedExport.actions[0].recovery ?? null, null);
+  await chooseOption('Action status filter', 'Closed');
+  await waitText('Synthetic follow-up', '.action-card');
+  await chooseOption('Status for Synthetic follow-up', 'Investigating');
+  await waitText('No actions match this view.');
+  await chooseOption('Action status filter', 'Unfinished');
+  await waitText('Synthetic follow-up', '.action-card');
+  console.log('PASS: session closure requires evidence, filtered downloads retain closed actions without inferred recovery, and reopening updates triage.');
   assert.deepEqual(browserErrors.filter(Boolean), [], 'Browser runtime errors');
-  console.log('20 synthetic browser acceptance cases passed; no live service or customer records used.');
+  console.log('21 synthetic browser acceptance cases passed; no live service or customer records used.');
 } catch (error) {
   console.error(error);
   // Surface the actual failure in public check annotations, not only gated job logs.

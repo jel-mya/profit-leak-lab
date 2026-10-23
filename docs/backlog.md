@@ -30,6 +30,11 @@
 ## Evidence discipline
 Record actual tests, commits and deployment outcomes below; never label an unrun check passed. The repository started with only a README. Earlier packaged releases have not been recovered as source and are not claimed as implemented here.
 
+## Session lifecycle browser coverage — 24 October 2026
+
+- All 21 local synthetic browser cases pass. New coverage exercises manual action creation, refusal to resolve without evidence, evidence-backed closure, unfinished/closed filtering, export of a closed action while hidden by the filter, no inferred recovery, and reopening into the unfinished view.
+- Initial test selectors incorrectly targeted an explicit status role and included a select icon; corrected the test selectors. No application change, customer records or live service used. Source-linked reconciliation and recovery-correction browser coverage remain open, alongside live Auth/PostgREST verification.
+
 ## Dashboard import browser coverage — 24 October 2026
 
 Snapshot/export follow-up: all 20 local synthetic browser cases pass. The debtor source date starts blank and is explicitly set independently of its invoice due date. The action-review JSON Blob contains exactly the three applied cumulative/period/snapshot contexts, with currency, count and version; cancelled and rejected imports are absent. This captures download contents in memory, not OS file-save behavior. Customer persistence remains disabled pending live verification.

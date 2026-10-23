@@ -332,9 +332,9 @@ try {
   await waitText('Import your data');
   await click('Import your data');
   const jobsCsv = 'id,name,revenue,materials,subcontractors,labour,other\nsynthetic-job,Synthetic job,1000,100,100,100,100';
-  async function importJobs() { await evaluate(`(() => {
+  async function importJobs(csv = jobsCsv) { await evaluate(`(() => {
     const transfer = new DataTransfer();
-    transfer.items.add(new File([${JSON.stringify(jobsCsv)}], 'synthetic-jobs.csv', {type:'text/csv'}));
+    transfer.items.add(new File([${JSON.stringify(csv)}], 'synthetic-jobs.csv', {type:'text/csv'}));
     const input = document.querySelector('input[type="file"]');
     input.files = transfer.files;
     input.dispatchEvent(new Event('change', {bubbles:true}));
@@ -369,8 +369,42 @@ try {
   await waitText('Import cancelled. Current records retained.');
   assert.equal(await evaluate("document.querySelector('[aria-label=\"Loaded reporting dates\"]').textContent"), loadedContext);
   console.log('PASS: apply rejects missing source date, records explicit cumulative context/version, and cancelled replacement preserves it.');
+  async function chooseOption(label, text) {
+    assert.equal(await evaluate(`(() => {
+      const trigger = document.querySelector('[aria-label=' + ${JSON.stringify(JSON.stringify(label))} + ']');
+      if (!trigger) return false;
+      trigger.click(); return true;
+    })()`), true);
+    await waitText(text, '[role="listbox"]');
+    assert.equal(await evaluate(`(() => {
+      const option = [...document.querySelectorAll('[role="option"]')].find(el => el.textContent.trim() === ${JSON.stringify(text)});
+      if (!option) return false;
+      option.click(); return true;
+    })()`), true);
+  }
+  const customCsv = 'Job code,name,revenue,materials,subcontractors,labour,other,Currency\nsynthetic-custom,Synthetic custom,1000,100,100,100,100,USD';
+  await importJobs(customCsv);
+  await waitText('Match columns', '[aria-label="Column mapping"]');
+  assert.equal(await evaluate("[...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'Validate mapping and preview').disabled"), true);
+  await chooseOption('Source column for id', 'Job code');
+  await chooseOption('Currency column for validation', 'Currency');
+  await click('Validate mapping and preview');
+  await waitText('currency does not match the review currency');
+  assert.equal(await evaluate("Boolean(document.querySelector('[aria-label=\"CSV preview\"]'))"), false);
+  assert.equal(await evaluate("document.querySelector('[aria-label=\"Loaded reporting dates\"]').textContent"), loadedContext);
+  await click('Cancel import');
+  await importJobs(customCsv.replace(',USD', ',AUD'));
+  await waitText('Match columns', '[aria-label="Column mapping"]');
+  await chooseOption('Source column for id', 'Job code');
+  await chooseOption('Currency column for validation', 'Currency');
+  await click('Validate mapping and preview');
+  await waitText('Currency column checked for every record.', '[aria-label="CSV preview"]');
+  await waitText('synthetic-custom', '[aria-label="CSV preview"]');
+  assert.equal(await evaluate("document.querySelector('[aria-label=\"CSV preview\"] tbody tr td').textContent"), 'synthetic-custom');
+  await click('Cancel import');
+  console.log('PASS: custom mapping is required; mismatched currency rejects replacement and matching currency previews the mapped ID.');
   assert.deepEqual(browserErrors.filter(Boolean), [], 'Browser runtime errors');
-  console.log('17 synthetic browser acceptance cases passed; no live service or customer records used.');
+  console.log('18 synthetic browser acceptance cases passed; no live service or customer records used.');
 } catch (error) {
   console.error(error);
   // Surface the actual failure in public check annotations, not only gated job logs.

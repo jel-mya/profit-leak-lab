@@ -403,8 +403,29 @@ try {
   assert.equal(await evaluate("document.querySelector('[aria-label=\"CSV preview\"] tbody tr td').textContent"), 'synthetic-custom');
   await click('Cancel import');
   console.log('PASS: custom mapping is required; mismatched currency rejects replacement and matching currency previews the mapped ID.');
+  await chooseOption('Import record type', 'payments');
+  await importJobs('id,supplierId,supplier,invoice,amount\nsynthetic-payment,synthetic-supplier,Synthetic supplier,SYN-1,25');
+  await waitText('Match columns', '[aria-label="Column mapping"]');
+  await click('Validate mapping and preview');
+  await waitText('Review 1 payments records', '[aria-label="CSV preview"]');
+  assert.deepEqual(await evaluate("[...document.querySelectorAll('[aria-label=\"CSV preview\"] input[type=date]')].map(el => el.value)"), ['', '']);
+  const periodStart = '[aria-label="CSV preview"] label:has(input[type="date"]):first-child input';
+  const periodEnd = '[aria-label="CSV preview"] label:has(input[type="date"]):nth-child(2) input';
+  await setValue(periodEnd, '2026-10-20');
+  await click('Apply reviewed import');
+  await waitText('Use dates in YYYY-MM-DD format');
+  await setValue(periodStart, '2026-10-21');
+  await click('Apply reviewed import');
+  await waitText('Reporting start must not be after the end date.');
+  assert.equal(await evaluate("document.querySelector('[aria-label=\"Loaded reporting dates\"]').textContent"), loadedContext);
+  await setValue(periodStart, '2026-10-01');
+  await click('Apply reviewed import');
+  await waitText('1 payments records loaded.');
+  await waitText('Reporting period 2026-10-01 to 2026-10-20', '[aria-label="Loaded reporting dates"]');
+  await waitText('Cumulative costs through 2026-10-20', '[aria-label="Loaded reporting dates"]');
+  console.log('PASS: transaction imports require both dates, reject reversed periods and preserve other sections on valid application.');
   assert.deepEqual(browserErrors.filter(Boolean), [], 'Browser runtime errors');
-  console.log('18 synthetic browser acceptance cases passed; no live service or customer records used.');
+  console.log('19 synthetic browser acceptance cases passed; no live service or customer records used.');
 } catch (error) {
   console.error(error);
   // Surface the actual failure in public check annotations, not only gated job logs.

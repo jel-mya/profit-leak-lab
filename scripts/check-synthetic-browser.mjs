@@ -328,8 +328,49 @@ try {
   assert.equal(await evaluate("document.querySelectorAll('tbody tr').length"), 4);
   assert.equal(await evaluate("Boolean(document.querySelector('[role=\"alert\"]'))"), false);
   console.log('PASS: missing review date explains hidden results and correction restores the loaded records.');
+  await command('Page.navigate', { url: fixtureUrl + '?imports' });
+  await waitText('Import your data');
+  await click('Import your data');
+  const jobsCsv = 'id,name,revenue,materials,subcontractors,labour,other\nsynthetic-job,Synthetic job,1000,100,100,100,100';
+  async function importJobs() { await evaluate(`(() => {
+    const transfer = new DataTransfer();
+    transfer.items.add(new File([${JSON.stringify(jobsCsv)}], 'synthetic-jobs.csv', {type:'text/csv'}));
+    const input = document.querySelector('input[type="file"]');
+    input.files = transfer.files;
+    input.dispatchEvent(new Event('change', {bubbles:true}));
+  })()`); }
+  await importJobs();
+  await waitText('Match columns', '[aria-label="Column mapping"]');
+  await click('Validate mapping and preview');
+  await waitText('Review 1 jobs records', '[aria-label="CSV preview"]');
+  assert.equal(await evaluate("document.querySelector('[aria-label=\"CSV preview\"] input[type=date]').value"), '');
+  await click('Cancel import');
+  await waitText('Import cancelled. Current records retained.');
+  assert.equal(await evaluate("Boolean(document.querySelector('[aria-label=\"Loaded reporting dates\"]'))"), false);
+  assert.equal(await evaluate("Boolean(document.querySelector('[aria-label=\"CSV preview\"]'))"), false);
+  console.log('PASS: real dashboard CSV worker mapping and preview require explicit source dates; cancellation loads no records.');
+  await importJobs();
+  await waitText('Match columns', '[aria-label="Column mapping"]');
+  await click('Validate mapping and preview');
+  await waitText('Review 1 jobs records', '[aria-label="CSV preview"]');
+  await click('Apply reviewed import');
+  await waitText('Use dates in YYYY-MM-DD format');
+  assert.equal(await evaluate("Boolean(document.querySelector('[aria-label=\"Loaded reporting dates\"]'))"), false);
+  assert.equal(await evaluate("Boolean(document.querySelector('[aria-label=\"CSV preview\"]'))"), true);
+  await setValue('[aria-label="CSV preview"] input[type="date"]', '2026-10-20');
+  await click('Apply reviewed import');
+  await waitText('1 jobs records loaded.');
+  await waitText('Cumulative costs through 2026-10-20', '[aria-label="Loaded reporting dates"]');
+  await waitText('version 1', '[aria-label="Loaded reporting dates"]');
+  const loadedContext = await evaluate("document.querySelector('[aria-label=\"Loaded reporting dates\"]').textContent");
+  await importJobs();
+  await waitText('Match columns', '[aria-label="Column mapping"]');
+  await click('Cancel import');
+  await waitText('Import cancelled. Current records retained.');
+  assert.equal(await evaluate("document.querySelector('[aria-label=\"Loaded reporting dates\"]').textContent"), loadedContext);
+  console.log('PASS: apply rejects missing source date, records explicit cumulative context/version, and cancelled replacement preserves it.');
   assert.deepEqual(browserErrors.filter(Boolean), [], 'Browser runtime errors');
-  console.log('15 synthetic browser acceptance cases passed; no live service or customer records used.');
+  console.log('17 synthetic browser acceptance cases passed; no live service or customer records used.');
 } catch (error) {
   console.error(error);
   // Surface the actual failure in public check annotations, not only gated job logs.

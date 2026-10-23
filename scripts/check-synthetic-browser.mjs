@@ -424,8 +424,38 @@ try {
   await waitText('Reporting period 2026-10-01 to 2026-10-20', '[aria-label="Loaded reporting dates"]');
   await waitText('Cumulative costs through 2026-10-20', '[aria-label="Loaded reporting dates"]');
   console.log('PASS: transaction imports require both dates, reject reversed periods and preserve other sections on valid application.');
+  await chooseOption('Import record type', 'debtors');
+  await importJobs('id,customer,dueDate,outstanding\nsynthetic-debtor,Synthetic customer,2026-09-01,50');
+  await waitText('Match columns', '[aria-label="Column mapping"]');
+  await click('Validate mapping and preview');
+  await waitText('Review 1 debtors records', '[aria-label="CSV preview"]');
+  assert.deepEqual(await evaluate("[...document.querySelectorAll('[aria-label=\"CSV preview\"] input[type=date]')].map(el => el.value)"), ['']);
+  await setValue('[aria-label="CSV preview"] input[type="date"]', '2026-10-19');
+  await click('Apply reviewed import');
+  await waitText('Balances at 2026-10-19', '[aria-label="Loaded reporting dates"]');
+  await evaluate("[...document.querySelectorAll('[role=tab]')].find(el => el.textContent.startsWith('Actions')).click()");
+  await waitText('Download actions');
+  await evaluate(`(() => {
+    URL.createObjectURL = blob => { window.actionExport = blob.text(); return 'blob:synthetic-action-export'; };
+    URL.revokeObjectURL = () => {};
+    HTMLAnchorElement.prototype.click = function () { window.actionFilename = this.download; };
+  })()`);
+  await click('Download actions');
+  const actionExport = JSON.parse(await evaluate('window.actionExport'));
+  assert.equal(await evaluate('window.actionFilename'), 'profitleaklab-actions.json');
+  assert.equal(actionExport.format, 'profitleaklab-action-review');
+  assert.equal(actionExport.schemaVersion, 1);
+  assert.equal(actionExport.currency, 'AUD');
+  assert.equal(actionExport.mode, 'Private session');
+  assert.deepEqual(actionExport.actions, []);
+  assert.deepEqual(actionExport.importHistory, [
+    {section:'jobs', version:1, reporting:{kind:'cumulative',start:null,end:'2026-10-20'}, count:1,currency:'AUD'},
+    {section:'payments', version:1, reporting:{kind:'period',start:'2026-10-01',end:'2026-10-20'}, count:1,currency:'AUD'},
+    {section:'debtors', version:1, reporting:{kind:'snapshot',start:null,end:'2026-10-19'}, count:1,currency:'AUD'},
+  ]);
+  console.log('PASS: debtor snapshot date is independent of due date and action download retains all three reporting contexts without cancelled imports.');
   assert.deepEqual(browserErrors.filter(Boolean), [], 'Browser runtime errors');
-  console.log('19 synthetic browser acceptance cases passed; no live service or customer records used.');
+  console.log('20 synthetic browser acceptance cases passed; no live service or customer records used.');
 } catch (error) {
   console.error(error);
   // Surface the actual failure in public check annotations, not only gated job logs.

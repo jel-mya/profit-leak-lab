@@ -312,6 +312,31 @@ test('foreign history responses clear cached access and cannot display another t
   assert.equal(workspace.snapshot().phase, 'signedOut');
   assert.equal(workspace.snapshot().history, null);
 });
+test('closing history invalidates its pending response without clearing the action list', async () => {
+  const pending = deferred();
+  const { workspace } = setup({ history: () => pending.promise });
+  await ready(workspace);
+  const reading = workspace.loadHistory(record.id);
+  workspace.closeHistory();
+  pending.resolve({ rows: [historyEvent], hasMore: false });
+  await assert.rejects(reading, e => e.code === 'STALE_REQUEST');
+  assert.equal(workspace.snapshot().history, null);
+  assert.equal(workspace.snapshot().phase, 'ready');
+  assert.equal(workspace.snapshot().actions[0].id, record.id);
+});
+test('an older history request cannot replace a newer requested page', async () => {
+  const first = deferred(); const second = deferred(); let calls = 0;
+  const { workspace } = setup({ history: () => ++calls === 1 ? first.promise : second.promise });
+  await ready(workspace);
+  const oldRead = workspace.loadHistory(record.id);
+  const newRead = workspace.loadHistory(record.id, '2');
+  second.resolve({ rows: [historyEvent], hasMore: false });
+  await newRead;
+  first.resolve({ rows: [{...historyEvent, revision: 2}], hasMore: true });
+  await assert.rejects(oldRead, e => e.code === 'STALE_REQUEST');
+  assert.equal(workspace.snapshot().history.rows[0].revision, 1);
+  assert.equal(workspace.snapshot().history.hasMore, false);
+});
 test('saving invalidates old history and a late history response cannot undo the save', async () => {
   const pending = deferred();
   const { workspace } = setup({ history: () => pending.promise });

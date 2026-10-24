@@ -30,6 +30,11 @@
 ## Evidence discipline
 Record actual tests, commits and deployment outcomes below; never label an unrun check passed. The repository started with only a README. Earlier packaged releases have not been recovered as source and are not claimed as implemented here.
 
+## Audit-history request ordering — 25 October 2026
+
+- All 51 workspace tests pass. Added deferred-response checks proving that closing history prevents a late response from reopening it while preserving the action list, and that an earlier history request cannot overwrite a newer requested page.
+- No application code changed. These test client request ordering only; live Auth/PostgREST and database concurrency verification remain required.
+
 ## Explicit onboarding browser coverage — 24 October 2026
 
 Failure-path follow-up, 25 October: all 49 workspace tests pass. A failed onboarding write retains existing business selection without automatic replay; a successful create followed by failed identity verification clears identity/memberships/actions without a second write. No application code changed, and these adapter-level tests do not establish live API outcomes.

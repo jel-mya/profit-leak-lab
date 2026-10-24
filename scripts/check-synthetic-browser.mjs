@@ -551,8 +551,30 @@ try {
   })()`);
   assert.equal(unloadProtected, false);
   console.log('PASS: clearing session removes staged preview, action/recovery history and import metadata and releases the unsaved-work guard.');
+  await setValue('[aria-label="New action"]', 'Synthetic triage');
+  await click('Add action');
+  await chooseOption('Action status filter', 'Needs details');
+  await waitText('Synthetic triage', '.action-card');
+  await setValue('.action-fields label:first-child input', 'Synthetic reviewer');
+  const reviewDate = await evaluate("document.querySelector('.settings input[type=date]').value");
+  await setValue('.action-fields input[type="date"]', reviewDate);
+  await waitText('No actions match this view.');
+  await chooseOption('Action status filter', 'Overdue');
+  await waitText('No actions match this view.');
+  await chooseOption('Action status filter', 'All actions');
+  await setValue('.action-fields input[type="date"]', '2000-01-01');
+  await chooseOption('Action status filter', 'Overdue');
+  await waitText('Synthetic triage', '.action-card');
+  await setValue('.action-fields label:last-child input', 'Synthetic dismissal evidence');
+  await chooseOption('Status for Synthetic triage', 'Dismissed');
+  await waitText('No actions match this view.');
+  await chooseOption('Action status filter', 'Needs details');
+  await waitText('No actions match this view.');
+  await chooseOption('Action status filter', 'Closed');
+  await waitText('Synthetic triage', '.action-card');
+  console.log('PASS: triage removes completed details, excludes due-today from overdue and removes dismissed actions from unfinished queues.');
   assert.deepEqual(browserErrors.filter(Boolean), [], 'Browser runtime errors');
-  console.log('24 synthetic browser acceptance cases passed; no live service or customer records used.');
+  console.log('25 synthetic browser acceptance cases passed; no live service or customer records used.');
 } catch (error) {
   console.error(error);
   // Surface the actual failure in public check annotations, not only gated job logs.

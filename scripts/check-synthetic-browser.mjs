@@ -65,12 +65,18 @@ try {
     '--disable-background-networking', '--disable-extensions', '--no-proxy-server',
     '--remote-allow-origins=*', `--remote-debugging-port=${port}`,
     `--user-data-dir=${browserData}`, 'about:blank',
-  ], { stdio: 'ignore', windowsHide: true });
+  ], { stdio: ['ignore', 'ignore', 'pipe'], windowsHide: true });
+  let chromeLog = '';
+  let chromeSpawnError;
+  chrome.stderr.on('data', data => { chromeLog = (chromeLog + String(data)).slice(-4000); });
+  chrome.on('error', error => { chromeSpawnError = error.message; });
   const page = await poll(async () => {
     const result = await fetch(`http://127.0.0.1:${port}/json`);
     const tabs = await result.json();
     return tabs.find(tab => tab.type === 'page' && tab.webSocketDebuggerUrl);
-  }, 'headless browser debugger');
+  }, 'headless browser debugger').catch(error => {
+    throw new Error(`${error.message}\nBrowser: ${browserBinary}\nExit: ${chrome.exitCode}; signal: ${chrome.signalCode}\nSpawn error: ${chromeSpawnError || 'none'}\nBrowser stderr (last 4000 characters):\n${chromeLog || '(empty)'}`);
+  });
   ws = new WebSocket(page.webSocketDebuggerUrl);
   await new Promise((yes, no) => {
     ws.addEventListener('open', yes, { once: true });

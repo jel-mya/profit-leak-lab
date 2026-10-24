@@ -30,6 +30,11 @@
 ## Evidence discipline
 Record actual tests, commits and deployment outcomes below; never label an unrun check passed. The repository started with only a README. Earlier packaged releases have not been recovered as source and are not claimed as implemented here.
 
+## Browser startup diagnostic follow-up — 24 October 2026
+
+- GitHub verify for `41423b5` passed unit tests and lint but failed waiting for the headless browser debugger, before acceptance scenarios ran. Build/worker/HTTP steps were skipped. Public annotations do not identify why Chrome failed to become reachable.
+- The runner now includes the executable path, exit/signal, spawn error and last 4,000 stderr characters on debugger startup failure. No sandbox flags or assertions were relaxed. All 28 local browser cases pass with this change; the CI startup cause remains unresolved until new evidence is available.
+
 ## Browser evidence reconciliation — 24 October 2026
 
 - Confirmed GitHub verify completed successfully for `d662e66`; reconciled the browser acceptance guide and pilot-readiness evidence with the 24-case suite, including its local dashboard/worker and retention coverage.

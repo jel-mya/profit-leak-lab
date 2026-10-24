@@ -363,6 +363,19 @@ try {
   await waitText('Cumulative costs through 2026-10-20', '[aria-label="Loaded reporting dates"]');
   await waitText('version 1', '[aria-label="Loaded reporting dates"]');
   const loadedContext = await evaluate("document.querySelector('[aria-label=\"Loaded reporting dates\"]').textContent");
+  await importJobs('id,id\nsynthetic,synthetic');
+  await waitText('CSV headers must be non-empty and unique.', 'output.feedback');
+  assert.equal(await evaluate("Boolean(document.querySelector('[aria-label=\"Column mapping\"]'))"), false);
+  assert.equal(await evaluate("document.querySelector('[aria-label=\"Loaded reporting dates\"]').textContent"), loadedContext);
+  assert.equal(await evaluate("document.querySelector('input[type=file]').disabled"), false);
+  await importJobs(jobsCsv.replace(',1000,', ',-1,'));
+  await waitText('Match columns', '[aria-label="Column mapping"]');
+  await click('Validate mapping and preview');
+  await waitText('non-negative', 'output.feedback');
+  assert.equal(await evaluate("Boolean(document.querySelector('[aria-label=\"CSV preview\"]'))"), false);
+  assert.equal(await evaluate("document.querySelector('[aria-label=\"Loaded reporting dates\"]').textContent"), loadedContext);
+  await click('Cancel import');
+  console.log('PASS: malformed headers and invalid amounts reject replacement, retain reporting context and leave import controls usable.');
   await importJobs();
   await waitText('Match columns', '[aria-label="Column mapping"]');
   await click('Cancel import');
@@ -589,7 +602,7 @@ try {
   await waitText('Synthetic triage', '.action-card');
   console.log('PASS: triage removes completed details, excludes due-today from overdue and removes dismissed actions from unfinished queues.');
   assert.deepEqual(browserErrors.filter(Boolean), [], 'Browser runtime errors');
-  console.log('26 synthetic browser acceptance cases passed; no live service or customer records used.');
+  console.log('27 synthetic browser acceptance cases passed; no live service or customer records used.');
 } catch (error) {
   console.error(error);
   // Surface the actual failure in public check annotations, not only gated job logs.

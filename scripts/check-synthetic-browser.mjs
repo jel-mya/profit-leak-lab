@@ -501,8 +501,36 @@ try {
   assert.deepEqual(corrected.recoveryHistory[1].after, corrected.recovery);
   assert.equal(corrected.recovery.evidence, 'Synthetic correction: receipt was unrelated');
   console.log('PASS: session recovery correction to zero preserves before/after history in UI and export without closing the action.');
+  await evaluate("[...document.querySelectorAll('[role=tab]')].find(el => el.textContent === 'Debtor risk').click()");
+  await waitText('Synthetic customer', 'tbody');
+  await evaluate("document.querySelector('tbody button').click()");
+  await waitText('Linked to the current source review');
+  await click('Import your data');
+  await importJobs('id,customer,dueDate,outstanding');
+  await waitText('Match columns', '[aria-label="Column mapping"]');
+  await click('Validate mapping and preview');
+  await waitText('Review 0 debtors records', '[aria-label="CSV preview"]');
+  await setValue('[aria-label="CSV preview"] input[type="date"]', '2026-10-21');
+  await click('Apply empty file and clear section');
+  await waitText('0 debtors records loaded.');
+  await evaluate("[...document.querySelectorAll('[role=tab]')].find(el => el.textContent.startsWith('Actions')).click()");
+  await waitText('Source reimported — review again');
+  await waitText('1 of 1 original source records are absent');
+  await waitText('No exact matching exception');
+  await waitText('Balances at 2026-10-19 · import version 1');
+  await click('Download actions');
+  const reconciled = JSON.parse(await evaluate('window.actionExport'));
+  const linked = reconciled.actions.find(action => action.source?.section === 'debtors');
+  assert.equal(linked.status, 'Open');
+  assert.equal(linked.recovery ?? null, null);
+  assert.equal(linked.source.importVersion, 1);
+  assert.equal(linked.source.amountMinorUnits, 5000);
+  assert.deepEqual(linked.source.recordIds, ['synthetic-debtor']);
+  assert.equal(reconciled.importHistory.at(-1).version, 2);
+  assert.equal(reconciled.importHistory.at(-1).count, 0);
+  console.log('PASS: removing source records flags reimport and absence, preserves original context and leaves the linked action open without recovery.');
   assert.deepEqual(browserErrors.filter(Boolean), [], 'Browser runtime errors');
-  console.log('22 synthetic browser acceptance cases passed; no live service or customer records used.');
+  console.log('23 synthetic browser acceptance cases passed; no live service or customer records used.');
 } catch (error) {
   console.error(error);
   // Surface the actual failure in public check annotations, not only gated job logs.

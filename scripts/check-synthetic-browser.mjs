@@ -529,8 +529,30 @@ try {
   assert.equal(reconciled.importHistory.at(-1).version, 2);
   assert.equal(reconciled.importHistory.at(-1).count, 0);
   console.log('PASS: removing source records flags reimport and absence, preserves original context and leaves the linked action open without recovery.');
+  await click('Import your data');
+  await importJobs('id,customer,dueDate,outstanding\nsynthetic-staged,Synthetic staged,2026-09-01,99');
+  await waitText('Match columns', '[aria-label="Column mapping"]');
+  await click('Validate mapping and preview');
+  await waitText('Review 1 debtors records', '[aria-label="CSV preview"]');
+  await click('Clear session');
+  await waitText('Session data and actions cleared.');
+  assert.equal(await evaluate("Boolean(document.querySelector('[aria-label=\"CSV preview\"]'))"), false);
+  assert.equal(await evaluate("Boolean(document.querySelector('[aria-label=\"Loaded reporting dates\"]'))"), false);
+  await evaluate("[...document.querySelectorAll('[role=tab]')].find(el => el.textContent.startsWith('Actions')).click()");
+  await waitText('No actions yet.');
+  await click('Download actions');
+  const cleared = JSON.parse(await evaluate('window.actionExport'));
+  assert.deepEqual(cleared.actions, []);
+  assert.deepEqual(cleared.importHistory, []);
+  assert.equal(cleared.mode, 'Private session');
+  const unloadProtected = await evaluate(`(() => {
+    const event = new Event('beforeunload', {cancelable:true});
+    window.dispatchEvent(event); return event.defaultPrevented;
+  })()`);
+  assert.equal(unloadProtected, false);
+  console.log('PASS: clearing session removes staged preview, action/recovery history and import metadata and releases the unsaved-work guard.');
   assert.deepEqual(browserErrors.filter(Boolean), [], 'Browser runtime errors');
-  console.log('23 synthetic browser acceptance cases passed; no live service or customer records used.');
+  console.log('24 synthetic browser acceptance cases passed; no live service or customer records used.');
 } catch (error) {
   console.error(error);
   // Surface the actual failure in public check annotations, not only gated job logs.

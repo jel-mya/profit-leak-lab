@@ -32,6 +32,8 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 
 ## Session lifecycle browser coverage — 24 October 2026
 
+Session cleanup follow-up: all 24 local synthetic browser cases pass. Clearing a session with previously saved actions/recovery revisions and a staged debtor preview removes the preview, actions and import history from UI/export and releases the beforeunload guard. This is a session-state regression check, not a forensic memory-erasure claim. No application persistence configuration changed.
+
 Source reconciliation follow-up: all 23 local synthetic browser cases pass. Tracking an imported debtor then applying a headers-only replacement flags reimport, missing source ID and no matching exception. The action retains its original snapshot date, version and amount and remains Open without recovery; the download records the empty replacement as version 2. A first test selected only the earlier manual action; correcting that selector made the case pass. Live and cross-session verification remain open.
 
 Recovery follow-up: all 22 local synthetic browser cases pass. Saving a synthetic AUD 12.34 recovery then correcting it to zero retains both revisions, the original evidence and the correction explanation in the downloaded before/after chain. The history UI displays both amounts and the action remains Investigating. This verifies session behavior, not live database immutability; source-linked reconciliation browser coverage remains open.

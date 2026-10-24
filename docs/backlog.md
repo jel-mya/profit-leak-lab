@@ -52,6 +52,8 @@ Recovery follow-up: all 22 local synthetic browser cases pass. Saving a syntheti
 
 ## Dashboard import browser coverage — 24 October 2026
 
+Currency follow-up: all 28 local synthetic browser cases pass. Attempts to switch AUD to USD with loaded records or a pending mapping show the appropriate rejection and retain AUD. After clearing the session, USD can be explicitly selected and appears in the export. No application or live configuration changed.
+
 Rejected replacement follow-up: all 27 local synthetic browser cases pass. Duplicate-header inspection failure and negative-amount mapping failure leave the loaded reporting context intact, produce no applicable preview and allow retry/cancellation. The later export assertion still contains only successful imports. No application or live configuration changed.
 
 Snapshot/export follow-up: all 20 local synthetic browser cases pass. The debtor source date starts blank and is explicitly set independently of its invoice due date. The action-review JSON Blob contains exactly the three applied cumulative/period/snapshot contexts, with currency, count and version; cancelled and rejected imports are absent. This captures download contents in memory, not OS file-save behavior. Customer persistence remains disabled pending live verification.

@@ -396,8 +396,14 @@ try {
     })()`), true);
   }
   const customCsv = 'Job code,name,revenue,materials,subcontractors,labour,other,Currency\nsynthetic-custom,Synthetic custom,1000,100,100,100,100,USD';
+  await chooseOption('Review currency — choose before importing', 'USD');
+  await waitText('Imported records keep their review currency.', 'output.feedback');
+  assert.equal(await evaluate("document.querySelector('[aria-label=\"Review currency — choose before importing\"] [data-slot=\"select-value\"]').textContent"), 'AUD');
   await importJobs(customCsv);
   await waitText('Match columns', '[aria-label="Column mapping"]');
+  await chooseOption('Review currency — choose before importing', 'USD');
+  await waitText('Cancel the pending import before changing currency', 'output.feedback');
+  assert.equal(await evaluate("document.querySelector('[aria-label=\"Review currency — choose before importing\"] [data-slot=\"select-value\"]').textContent"), 'AUD');
   assert.equal(await evaluate("[...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'Validate mapping and preview').disabled"), true);
   await chooseOption('Source column for id', 'Job code');
   await chooseOption('Currency column for validation', 'Currency');
@@ -578,6 +584,11 @@ try {
     window.dispatchEvent(event); return event.defaultPrevented;
   })()`);
   assert.equal(unloadProtected, false);
+  await chooseOption('Review currency — choose before importing', 'USD');
+  await waitText('Review currency selected.', 'output.feedback');
+  await click('Download actions');
+  assert.equal(JSON.parse(await evaluate('window.actionExport')).currency, 'USD');
+  console.log('PASS: loaded records and pending imports block currency relabeling; clearing the session permits an explicit new currency.');
   console.log('PASS: clearing session removes staged preview, action/recovery history and import metadata and releases the unsaved-work guard.');
   await setValue('[aria-label="New action"]', 'Synthetic triage');
   await click('Add action');
@@ -602,7 +613,7 @@ try {
   await waitText('Synthetic triage', '.action-card');
   console.log('PASS: triage removes completed details, excludes due-today from overdue and removes dismissed actions from unfinished queues.');
   assert.deepEqual(browserErrors.filter(Boolean), [], 'Browser runtime errors');
-  console.log('27 synthetic browser acceptance cases passed; no live service or customer records used.');
+  console.log('28 synthetic browser acceptance cases passed; no live service or customer records used.');
 } catch (error) {
   console.error(error);
   // Surface the actual failure in public check annotations, not only gated job logs.

@@ -37,6 +37,8 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 
 ## Session lifecycle browser coverage — 24 October 2026
 
+Recovery draft follow-up: all 26 local synthetic browser cases pass. Saving unchanged recovery values retains the same audit history; unsaved amount edits survive filtering but do not enter exported recovery/history, and discard restores the saved value. Previous commit `f7af56f` has confirmed successful GitHub verification. No application behavior or live configuration changed.
+
 Triage follow-up: all 25 local synthetic browser cases pass. Completing owner/due date removes an action from Needs details; due-today is excluded from Overdue while an earlier date is included; evidence-backed dismissal removes it from unfinished queues and retains it in Closed. No application or persistence configuration changed.
 
 Session cleanup follow-up: all 24 local synthetic browser cases pass. Clearing a session with previously saved actions/recovery revisions and a staged debtor preview removes the preview, actions and import history from UI/export and releases the beforeunload guard. This is a session-state regression check, not a forensic memory-erasure claim. No application persistence configuration changed.

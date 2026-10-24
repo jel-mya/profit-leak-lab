@@ -500,6 +500,21 @@ try {
   assert.deepEqual(corrected.recoveryHistory[1].before, corrected.recoveryHistory[0].after);
   assert.deepEqual(corrected.recoveryHistory[1].after, corrected.recovery);
   assert.equal(corrected.recovery.evidence, 'Synthetic correction: receipt was unrelated');
+  await click('Save recovery record');
+  await waitText('Saved recovery revisions: 2', '.action-card');
+  await setValue('.action-card input[name="amount"]', '99');
+  await click('Download actions');
+  const draftExport = JSON.parse(await evaluate('window.actionExport')).actions[0];
+  assert.deepEqual(draftExport.recovery, corrected.recovery);
+  assert.deepEqual(draftExport.recoveryHistory, corrected.recoveryHistory);
+  await chooseOption('Action status filter', 'Closed');
+  await waitText('No actions match this view.');
+  await chooseOption('Action status filter', 'Unfinished');
+  await waitText('Synthetic follow-up', '.action-card');
+  assert.equal(await evaluate("document.querySelector('.action-card input[name=amount]').value"), '99');
+  await click('Discard unsaved recovery edits');
+  assert.equal(await evaluate("document.querySelector('.action-card input[name=amount]').value"), '0.00');
+  console.log('PASS: unchanged recovery saves add no history; unsaved edits survive filtering, stay out of exports and can be discarded.');
   console.log('PASS: session recovery correction to zero preserves before/after history in UI and export without closing the action.');
   await evaluate("[...document.querySelectorAll('[role=tab]')].find(el => el.textContent === 'Debtor risk').click()");
   await waitText('Synthetic customer', 'tbody');
@@ -574,7 +589,7 @@ try {
   await waitText('Synthetic triage', '.action-card');
   console.log('PASS: triage removes completed details, excludes due-today from overdue and removes dismissed actions from unfinished queues.');
   assert.deepEqual(browserErrors.filter(Boolean), [], 'Browser runtime errors');
-  console.log('25 synthetic browser acceptance cases passed; no live service or customer records used.');
+  console.log('26 synthetic browser acceptance cases passed; no live service or customer records used.');
 } catch (error) {
   console.error(error);
   // Surface the actual failure in public check annotations, not only gated job logs.

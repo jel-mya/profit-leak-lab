@@ -622,6 +622,11 @@ try {
   await waitText('Create your starter business');
   await click('Inspect synthetic writes');
   await waitText('Synthetic writes: 0');
+  await setValue('main form input', '   ');
+  await click('Create starter business');
+  await waitText('Enter a business name using 1–200 characters');
+  await click('Inspect synthetic writes');
+  await waitText('Synthetic writes: 0');
   await setValue('main form input', 'Synthetic starter');
   await chooseOption('Business currency', 'NZD');
   await click('Create starter business');

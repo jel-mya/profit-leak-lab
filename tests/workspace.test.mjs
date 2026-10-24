@@ -31,6 +31,20 @@ test('invalid onboarding details fail before writes and retain business selectio
   }
   assert.equal(writes, 0);
 });
+test('pending onboarding blocks a second submission and requires explicit selection afterward', async () => {
+  const pending = deferred(); let writes = 0;
+  const { workspace } = setup({ createBusiness: () => { writes++; return pending.promise; } });
+  await workspace.connect();
+  const first = workspace.onboard('Synthetic', 'AUD');
+  await assert.rejects(workspace.onboard('Synthetic', 'AUD'), e => e.code === 'NOT_READY');
+  assert.equal(writes, 1);
+  pending.resolve({ id: 'a', name: 'Synthetic', currency: 'AUD' });
+  await first;
+  assert.equal(workspace.snapshot().phase, 'chooseBusiness');
+  assert.equal(workspace.snapshot().businessId, null);
+  assert.deepEqual(workspace.snapshot().actions, []);
+});
+
 test('verified session loads only an explicitly selected membership', async () => {
   const { workspace } = setup();
   await workspace.connect();

@@ -44,6 +44,16 @@ test('pending onboarding blocks a second submission and requires explicit select
   assert.equal(workspace.snapshot().businessId, null);
   assert.deepEqual(workspace.snapshot().actions, []);
 });
+test('onboarding submits the same trimmed name it validates', async () => {
+  const calls = [];
+  const { workspace } = setup({ createBusiness: async (name, currency) => {
+    calls.push({name, currency}); return {id:'a', name, currency};
+  } });
+  await workspace.connect();
+  await workspace.onboard('\t Synthetic business \n', 'AUD');
+  assert.deepEqual(calls, [{name:'Synthetic business', currency:'AUD'}]);
+  assert.equal(workspace.snapshot().phase, 'chooseBusiness');
+});
 
 test('failed onboarding retains selection but never automatically retries the write', async () => {
   let writes = 0;

@@ -238,7 +238,7 @@ export function createWorkspace(port) {
       const ticket = ++generation;
       publish({ phase: 'loading', error: null });
       try {
-        const business = await port.createBusiness(name, currency); current(ticket);
+        const business = await port.createBusiness(name.trim(), currency); current(ticket);
         await workspace.connect();
         return business;
       } catch (error) {

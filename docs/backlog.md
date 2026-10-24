@@ -37,6 +37,8 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 
 ## Explicit onboarding browser coverage — 24 October 2026
 
+Name consistency follow-up, 25 October: onboarding now submits the trimmed name used by client validation instead of forwarding surrounding whitespace. This avoids retaining tabs/newlines that PostgreSQL's default space-only btrim does not remove. All 52 workspace tests and frontend lint pass; no database rules or live configuration changed.
+
 Failure-path follow-up, 25 October: all 49 workspace tests pass. A failed onboarding write retains existing business selection without automatic replay; a successful create followed by failed identity verification clears identity/memberships/actions without a second write. No application code changed, and these adapter-level tests do not establish live API outcomes.
 
 Submission follow-up: all 47 workspace tests and 29 local browser cases pass. A deferred onboarding request rejects a second submission without a second port call and returns to explicit business selection after completion. Browser coverage now verifies whitespace-only input shows the specific validation message, makes zero writes and permits a corrected submission. This tests client request coordination, not live multi-connection concurrency.

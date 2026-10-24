@@ -30,6 +30,11 @@
 ## Evidence discipline
 Record actual tests, commits and deployment outcomes below; never label an unrun check passed. The repository started with only a README. Earlier packaged releases have not been recovered as source and are not claimed as implemented here.
 
+## Explicit onboarding browser coverage — 24 October 2026
+
+- Extended the in-memory adapter with starter-business creation and owner membership. All 29 local synthetic browser cases pass, including zero writes before submission, one explicit create and separate selection of the new business before actions load.
+- No real Auth, onboarding RPC, concurrent creation or tenant boundary verified by this fixture. Customer persistence stays disabled; live Auth/PostgREST remains the release gate.
+
 ## Browser startup diagnostic follow-up — 24 October 2026
 
 - GitHub verify for `41423b5` passed unit tests and lint but failed waiting for the headless browser debugger, before acceptance scenarios ran. Build/worker/HTTP steps were skipped. Public annotations do not identify why Chrome failed to become reachable.

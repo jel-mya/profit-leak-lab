@@ -19,7 +19,7 @@ On GitHub's Linux runner the `verify` workflow attempts this check after locked 
 7. Invalid negative recovery fails before the synthetic port receives a write.
 8. A simulated remote sign-out clears the action view and returns to the sign-in state.
 
-The runner also covers these cases (28 total as of 24 October 2026; ordering follows the executable script):
+The runner also covers these cases (29 total as of 24 October 2026; ordering follows the executable script):
 
 - Viewer audit history: before/after fields, actor attribution, baseline and older/latest navigation without writes.
 - Retention import confirmations; date states/totals/currency lock; invalid replacement and clearing; 51-record pagination; full JSON export and replacement page reset; missing-date feedback and restoration (six cases).
@@ -29,6 +29,7 @@ The runner also covers these cases (28 total as of 24 October 2026; ordering fol
 - Unchanged recovery saves do not duplicate revisions; unsaved drafts survive filters, remain excluded from exports and can be discarded (one case).
 - Duplicate CSV headers and invalid negative amounts reject replacements without changing loaded reporting context or preventing retry (one case).
 - Loaded records and pending imports reject currency changes; clearing the session permits a new explicit currency reflected in export (one case).
+- Starter-business onboarding makes no write on screen load, makes one on explicit submission and requires selecting the new owner business before loading actions (one case, synthetic adapter only).
 
 Canonical `d662e66dd0e57848b2622929af0adf66567ce2ae` passed all 24 cases locally and its GitHub verify workflow completed successfully. JSON export assertions inspect generated Blob contents in memory; they do not verify the operating system's file-save behavior. Source data is generated in memory from fictional records.
 

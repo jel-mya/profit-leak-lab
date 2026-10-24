@@ -618,8 +618,21 @@ try {
   await chooseOption('Action status filter', 'Closed');
   await waitText('Synthetic triage', '.action-card');
   console.log('PASS: triage removes completed details, excludes due-today from overdue and removes dismissed actions from unfinished queues.');
+  await command('Page.navigate', {url:fixtureUrl});
+  await waitText('Create your starter business');
+  await click('Inspect synthetic writes');
+  await waitText('Synthetic writes: 0');
+  await setValue('main form input', 'Synthetic starter');
+  await chooseOption('Business currency', 'NZD');
+  await click('Create starter business');
+  await waitText('Synthetic starter · owner');
+  await click('Inspect synthetic writes');
+  await waitText('Synthetic writes: 1');
+  await click('Synthetic starter · owner');
+  await waitText('Saved actions', 'main');
+  console.log('PASS: starter business creation requires explicit submission and then explicit owner business selection.');
   assert.deepEqual(browserErrors.filter(Boolean), [], 'Browser runtime errors');
-  console.log('28 synthetic browser acceptance cases passed; no live service or customer records used.');
+  console.log('29 synthetic browser acceptance cases passed; no live service or customer records used.');
 } catch (error) {
   console.error(error);
   // Surface the actual failure in public check annotations, not only gated job logs.

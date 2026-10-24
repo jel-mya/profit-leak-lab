@@ -1,7 +1,8 @@
 export let scenario = 'success';
 export let writes = 0;
 let authCallback;
-export function configure(value) { scenario = value; writes = 0; }
+let starter;
+export function configure(value) { scenario = value; writes = 0; starter = undefined; }
 export function revoke() { authCallback?.('SIGNED_OUT', null); }
 const record = (id, business_id = 'a') => ({ id, business_id, title: `Synthetic ${id}`, owner_label: '', due_date: null, status: 'Open', note: '', revision: 1 });
 export function createClient() { return { auth: {
@@ -11,7 +12,8 @@ export function createClient() { return { auth: {
 } }; }
 export function createSupabasePort() { return {
   verifyUser: async () => ({ id: 'synthetic-user', email_confirmed_at: '2026-09-01', is_anonymous: false }),
-  memberships: async () => [{ business_id: 'a', role: scenario === 'viewer' ? 'viewer' : 'editor', businesses: { name: 'Synthetic business', currency: 'AUD' } }],
+  memberships: async () => starter ? [{business_id: starter.id, role:'owner', businesses:starter}] : [{ business_id: 'a', role: scenario === 'viewer' ? 'viewer' : 'editor', businesses: { name: 'Synthetic business', currency: 'AUD' } }],
+  createBusiness: async (name, currency) => { writes++; starter = {id:'synthetic-starter', name, currency}; return starter; },
   actions: async (id, offset) => ({ rows: [record(`action-${offset || 0}`, id), record(`second-${offset || 0}`, id)], hasMore: true }),
   action: async (businessId, id) => ({ ...record(id, businessId), revision: 2 }),
   history: async (businessId, id, before) => {

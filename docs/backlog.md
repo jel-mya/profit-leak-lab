@@ -32,6 +32,8 @@ Record actual tests, commits and deployment outcomes below; never label an unrun
 
 ## Explicit onboarding browser coverage — 24 October 2026
 
+Failure-path follow-up, 25 October: all 49 workspace tests pass. A failed onboarding write retains existing business selection without automatic replay; a successful create followed by failed identity verification clears identity/memberships/actions without a second write. No application code changed, and these adapter-level tests do not establish live API outcomes.
+
 Submission follow-up: all 47 workspace tests and 29 local browser cases pass. A deferred onboarding request rejects a second submission without a second port call and returns to explicit business selection after completion. Browser coverage now verifies whitespace-only input shows the specific validation message, makes zero writes and permits a corrected submission. This tests client request coordination, not live multi-connection concurrency.
 
 Validation follow-up: the coordinator now rejects blank/whitespace-only names, names over 200 trimmed characters and unsupported currencies before calling the onboarding API; the UI provides a specific correction message. All 46 workspace tests, 29 local browser cases and frontend lint pass. Server validation remains authoritative and live verification remains required.

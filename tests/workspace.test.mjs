@@ -45,6 +45,35 @@ test('pending onboarding blocks a second submission and requires explicit select
   assert.deepEqual(workspace.snapshot().actions, []);
 });
 
+test('failed onboarding retains selection but never automatically retries the write', async () => {
+  let writes = 0;
+  const { workspace } = setup({ createBusiness: async () => { writes++; throw fail('NETWORK_FAILURE'); } });
+  await workspace.connect();
+  await assert.rejects(workspace.onboard('Synthetic', 'AUD'), e => e.code === 'NETWORK_FAILURE');
+  assert.equal(writes, 1);
+  assert.equal(workspace.snapshot().phase, 'chooseBusiness');
+  assert.equal(workspace.snapshot().businessId, null);
+  assert.equal(workspace.snapshot().memberships.length, 2);
+  await workspace.selectBusiness('a');
+  assert.equal(workspace.snapshot().phase, 'ready');
+  assert.equal(writes, 1);
+});
+
+test('onboarding success followed by failed membership verification clears access without another write', async () => {
+  let reads = 0; let writes = 0;
+  const { workspace } = setup({
+    verifyUser: async () => { if (++reads > 1) throw fail('NETWORK_FAILURE'); return user; },
+    createBusiness: async () => { writes++; return { id: 'a', name: 'Synthetic', currency: 'AUD' }; },
+  });
+  await workspace.connect();
+  await assert.rejects(workspace.onboard('Synthetic', 'AUD'), e => e.code === 'NETWORK_FAILURE');
+  assert.equal(writes, 1);
+  assert.equal(workspace.snapshot().phase, 'signedOut');
+  assert.equal(workspace.snapshot().userId, null);
+  assert.deepEqual(workspace.snapshot().memberships, []);
+  assert.deepEqual(workspace.snapshot().actions, []);
+});
+
 test('verified session loads only an explicitly selected membership', async () => {
   const { workspace } = setup();
   await workspace.connect();

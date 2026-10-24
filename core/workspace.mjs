@@ -234,6 +234,7 @@ export function createWorkspace(port) {
     },
     async onboard(name, currency) {
       if (state.phase !== 'chooseBusiness' || !state.userId) throw new WorkspaceError('NOT_READY');
+      if (typeof name !== 'string' || !name.trim() || name.trim().length > 200 || !['AUD', 'USD', 'GBP', 'CAD', 'NZD'].includes(currency)) throw new WorkspaceError('INVALID_BUSINESS');
       const ticket = ++generation;
       publish({ phase: 'loading', error: null });
       try {

@@ -20,6 +20,17 @@ function setup(overrides = {}) {
   return { workspace: createWorkspace(port), calls };
 }
 async function ready(workspace) { await workspace.connect(); await workspace.selectBusiness('a'); }
+
+test('invalid onboarding details fail before writes and retain business selection', async () => {
+  let writes = 0;
+  const { workspace } = setup({ createBusiness: async () => { writes++; } });
+  await workspace.connect();
+  for (const [name, currency] of [['   ', 'AUD'], ['x'.repeat(201), 'AUD'], [null, 'AUD'], ['Synthetic', 'EUR']]) {
+    await assert.rejects(workspace.onboard(name, currency), e => e.code === 'INVALID_BUSINESS');
+    assert.equal(workspace.snapshot().phase, 'chooseBusiness');
+  }
+  assert.equal(writes, 0);
+});
 test('verified session loads only an explicitly selected membership', async () => {
   const { workspace } = setup();
   await workspace.connect();

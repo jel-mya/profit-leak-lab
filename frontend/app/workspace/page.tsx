@@ -33,6 +33,7 @@ const blank: Draft = {
   note: '',
 };
 const messages: Record<string, string> = {
+  INVALID_BUSINESS: 'Enter a business name using 1–200 characters and choose a supported currency.',
   RECOVERY_UNCERTAIN: 'The recovery may have been saved. Load and review the current record before making another change.',
   INVALID_RECOVERY: 'Check the recovery amount, date and evidence.',
   RECOVERY_CURRENCY_MISMATCH: 'Recovery currency must match the business. Refresh your business access before continuing.',

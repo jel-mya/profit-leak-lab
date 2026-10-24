@@ -30,6 +30,11 @@
 ## Evidence discipline
 Record actual tests, commits and deployment outcomes below; never label an unrun check passed. The repository started with only a README. Earlier packaged releases have not been recovered as source and are not claimed as implemented here.
 
+## Browser evidence reconciliation — 24 October 2026
+
+- Confirmed GitHub verify completed successfully for `d662e66`; reconciled the browser acceptance guide and pilot-readiness evidence with the 24-case suite, including its local dashboard/worker and retention coverage.
+- Documentation only. No tests rerun for this update; the cited local and CI results belong to `d662e66`. Live Auth/PostgREST, deployment, native download behavior and customer persistence remain unverified.
+
 ## Session lifecycle browser coverage — 24 October 2026
 
 Session cleanup follow-up: all 24 local synthetic browser cases pass. Clearing a session with previously saved actions/recovery revisions and a staged debtor preview removes the preview, actions and import history from UI/export and releases the beforeunload guard. This is a session-state regression check, not a forensic memory-erasure claim. No application persistence configuration changed.

@@ -2,6 +2,8 @@
 
 Status as of 13 September 2026: implemented, disabled, not ready for customer records.
 
+Evidence update, 24 October 2026: the required synthetic browser suite now has 24 passing local cases, with successful GitHub verification for `d662e66dd0e57848b2622929af0adf66567ce2ae`. It covers workspace audit/recovery interactions plus dashboard imports, session lifecycle and retention review; see the current [coverage inventory](browser-acceptance.md). This does not change the disabled customer-persistence status or satisfy the live Auth/PostgREST and multi-connection gates below. Earlier counts in this document are historical evidence.
+
 The connected pilot includes verified sign-in, explicit business selection/onboarding, action creation, revision-checked edits, audit history and reported recovery entry/correction. The session demo remains separate; imports and session recovery history are never automatically uploaded.
 
 ## Verified delivery

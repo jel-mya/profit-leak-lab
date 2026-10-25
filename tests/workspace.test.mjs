@@ -93,6 +93,29 @@ test('verified session loads only an explicitly selected membership', async () =
   await workspace.selectBusiness('a');
   assert.equal(workspace.snapshot().actions[0].business_id, 'a');
 });
+test('overlapping conflict reads adopt only the newest requested revision', async () => {
+  const first = deferred(); const second = deferred(); let reads = 0;
+  const revisions = [];
+  const { workspace } = setup({
+    saveAction: async (id, revision, values) => {
+      revisions.push(revision);
+      if (revisions.length === 1) throw fail('PT409');
+      return {...record, ...values, revision: revision + 1};
+    },
+    action: () => ++reads === 1 ? first.promise : second.promise,
+  });
+  await ready(workspace);
+  await assert.rejects(workspace.save(record.id, draft), e => e.code === 'PT409');
+  const older = workspace.reloadConflict();
+  const newer = workspace.reloadConflict();
+  second.resolve({...record, revision: 3}); await newer;
+  first.resolve({...record, revision: 2});
+  await assert.rejects(older, e => e.code === 'STALE_REQUEST');
+  assert.equal(workspace.snapshot().conflict.current.revision, 3);
+  await workspace.resolveConflict({...draft, note:'Synthetic reconciliation'});
+  assert.deepEqual(revisions, [1, 3]);
+  assert.equal(workspace.snapshot().actions[0].revision, 4);
+});
 test('anonymous, unverified and absent users fail closed', async () => {
   for (const identity of [null, { ...user, is_anonymous: true }, { ...user, email_confirmed_at: null }]) {
     const { workspace } = setup({ verifyUser: async () => identity });

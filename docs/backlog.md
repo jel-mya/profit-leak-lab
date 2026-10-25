@@ -1,5 +1,10 @@
 # Delivery ledger
 
+## Conflict reread ordering — 25 October 2026
+
+- Added a regression for overlapping conflict reads completing in reverse order. The stale response is rejected, and explicit reconciliation saves against the newer revision rather than overwriting it with the older response.
+- All 53 workspace tests pass. This verifies the local coordinator; actual Supabase Auth/PostgREST verification remains required before customer persistence.
+
 ## First canonical increment (historical)
 - Canonical strategy and operational rules recovered from earlier planning.
 - Seven control areas with a working review dashboard, fictional demo and CSV templates/imports.

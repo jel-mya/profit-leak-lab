@@ -6,6 +6,10 @@ export class WorkspaceError extends Error {
   constructor(code) { super(code); this.name = 'WorkspaceError'; this.code = code; }
 }
 const editable = ['title', 'owner_label', 'due_date', 'status', 'note'];
+// Revisions must survive JSON/JavaScript without rounding before reuse in RPCs.
+function validRevision(action) {
+  return Number.isSafeInteger(action?.revision) && action.revision > 0;
+}
 function draftFields(draft) {
   if (!draft || typeof draft !== 'object') throw new WorkspaceError('INVALID_DRAFT');
   const values = Object.fromEntries(editable.map(k => [k, draft[k]]));
@@ -77,7 +81,7 @@ export function createWorkspace(port) {
       publish({ phase: 'loading', creation: state.creation?.businessId === id ? state.creation : null, businessId: id, actions: [], hasMore: false, conflict: null, recoveryReview: null, history: null, error: null });
       try {
         const result = await port.actions(id, offset); current(ticket);
-        if (!Array.isArray(result?.rows) || typeof result.hasMore !== 'boolean' || result.rows.some(a => !a || a.business_id !== id)) throw new WorkspaceError('INVALID_RESPONSE');
+        if (!Array.isArray(result?.rows) || typeof result.hasMore !== 'boolean' || result.rows.some(a => !validRevision(a) || a.business_id !== id)) throw new WorkspaceError('INVALID_RESPONSE');
         publish({ phase: 'ready', actions: result.rows, hasMore: result.hasMore, offset });
       } catch (error) {
         if (ticket === generation) {
@@ -121,7 +125,7 @@ export function createWorkspace(port) {
       publish({ phase: 'saving', history: null, error: null });
       try {
         const saved = await port.recordRecovery(id, original.revision, values); current(ticket);
-        if (!saved || saved.id !== id || saved.business_id !== state.businessId) throw new WorkspaceError('INVALID_RESPONSE');
+        if (!validRevision(saved) || saved.id !== id || saved.business_id !== state.businessId) throw new WorkspaceError('INVALID_RESPONSE');
         publish({ phase: 'ready', actions: state.actions.map(a => a.id === id ? saved : a), recoveryReview: null });
         return structuredClone(saved);
       } catch (error) {
@@ -140,7 +144,7 @@ export function createWorkspace(port) {
       publish({ recoveryReview: { ...review, current: undefined }, error: null });
       try {
         const latest = await port.action(state.businessId, review.id); current(ticket);
-        if (!latest || latest.id !== review.id || latest.business_id !== state.businessId) throw new WorkspaceError('INVALID_RESPONSE');
+        if (!validRevision(latest) || latest.id !== review.id || latest.business_id !== state.businessId) throw new WorkspaceError('INVALID_RESPONSE');
         publish({ recoveryReview: { ...review, current: latest } });
       } catch (error) {
         if (ticket === generation) {
@@ -169,7 +173,7 @@ export function createWorkspace(port) {
       publish({ phase: 'saving', history: null, error: null });
       try {
         const saved = await port.saveAction(original.id, original.revision, values); current(ticket);
-        if (!saved || saved.id !== id || saved.business_id !== state.businessId) throw new WorkspaceError('INVALID_RESPONSE');
+        if (!validRevision(saved) || saved.id !== id || saved.business_id !== state.businessId) throw new WorkspaceError('INVALID_RESPONSE');
         publish({ phase: 'ready', actions: state.actions.map(a => a.id === id ? saved : a), conflict: null });
         return structuredClone(saved);
       } catch (error) {
@@ -188,7 +192,7 @@ export function createWorkspace(port) {
       publish({ conflict: { ...conflict, current: undefined }, error: null });
       try {
         const latest = await port.action(state.businessId, conflict.id); current(ticket);
-        if (!latest || latest.id !== conflict.id || latest.business_id !== state.businessId) throw new WorkspaceError('INVALID_RESPONSE');
+        if (!validRevision(latest) || latest.id !== conflict.id || latest.business_id !== state.businessId) throw new WorkspaceError('INVALID_RESPONSE');
         publish({ conflict: { ...conflict, current: latest } });
       } catch (error) {
         if (ticket === generation) {
@@ -220,7 +224,7 @@ export function createWorkspace(port) {
       publish({ phase: 'saving', creation: attempt, history: null, error: null });
       try {
         const created = await port.createAction(id, values, attempt.requestId); current(ticket);
-        if (!created || typeof created.id !== 'string' || !created.id || created.business_id !== id) throw new WorkspaceError('INVALID_RESPONSE');
+        if (!validRevision(created) || typeof created.id !== 'string' || !created.id || created.business_id !== id) throw new WorkspaceError('INVALID_RESPONSE');
         publish({ phase: 'ready', creation: null });
         return structuredClone(created);
       } catch (error) {

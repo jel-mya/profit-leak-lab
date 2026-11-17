@@ -1,5 +1,11 @@
 # Delivery ledger
 
+## Reject invalid action revisions — 17 November 2026
+
+- Action lists, creation/save/recovery responses and conflict/recovery rereads now require positive, safe integer revisions before caching or reusing them as write preconditions. Malformed responses clear connected workspace access instead of allowing a missing, fractional or rounded revision into the next RPC.
+- The regression covers seven invalid revision forms across all six response paths and verifies that further writes are blocked. All 251 local tests pass, including the PostgreSQL isolation suite and 54 workspace tests. Actual Supabase Auth/PostgREST verification remains required before customer persistence.
+- Production build, frontend lint, repository hygiene and all 29 synthetic browser cases pass. The browser fixture initially timed out in the sandbox; the authorized local rerun outside the sandbox passed without live services or customer records.
+
 ## Conflict reread ordering — 25 October 2026
 
 - Added a regression for overlapping conflict reads completing in reverse order. The stale response is rejected, and explicit reconciliation saves against the newer revision rather than overwriting it with the older response.

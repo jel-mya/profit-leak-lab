@@ -21,6 +21,46 @@ function setup(overrides = {}) {
 }
 async function ready(workspace) { await workspace.connect(); await workspace.selectBusiness('a'); }
 
+test('invalid action revisions never enter cached state or become write preconditions', async () => {
+  for (const revision of [undefined, null, 0, -1, 1.5, '2', Number.MAX_SAFE_INTEGER + 1]) {
+    const invalid = {...record, revision};
+    for (const operation of ['list', 'save', 'create', 'recovery', 'conflictRead', 'recoveryRead']) {
+      let writes = 0;
+      const {workspace} = setup({
+        memberships: async () => [{business_id: 'a', role: 'editor', businesses: {currency: 'AUD'}}],
+        actions: async () => ({rows: [operation === 'list' ? invalid : record], hasMore: false}),
+        action: async () => invalid,
+        saveAction: async () => { writes++; if (operation === 'conflictRead') throw fail('PT409'); return invalid; },
+        createAction: async () => { writes++; return invalid; },
+        recordRecovery: async () => { writes++; if (operation === 'recoveryRead') throw fail('PT409'); return invalid; },
+      });
+      await workspace.connect();
+      const recovery = {amountMinorUnits: 100, currency: 'AUD', date: '2026-09-01', evidence: 'Synthetic receipt'};
+      let request;
+      if (operation === 'list') request = workspace.selectBusiness('a');
+      else {
+        await workspace.selectBusiness('a');
+        if (operation === 'save') request = workspace.save(record.id, draft);
+        if (operation === 'create') request = workspace.create(draft);
+        if (operation === 'recovery') request = workspace.recordRecovery(record.id, recovery);
+        if (operation === 'conflictRead') {
+          await assert.rejects(workspace.save(record.id, draft), e => e.code === 'PT409');
+          request = workspace.reloadConflict();
+        }
+        if (operation === 'recoveryRead') {
+          await assert.rejects(workspace.recordRecovery(record.id, recovery), e => e.code === 'PT409');
+          request = workspace.reloadRecoveryReview();
+        }
+      }
+      await assert.rejects(request, e => e.code === 'INVALID_RESPONSE', operation);
+      assert.equal(workspace.snapshot().phase, 'signedOut', operation);
+      assert.deepEqual(workspace.snapshot().actions, []);
+      await assert.rejects(workspace.save(record.id, draft), e => e.code === 'NOT_READY');
+      assert.equal(writes, operation === 'list' ? 0 : 1);
+    }
+  }
+});
+
 test('invalid onboarding details fail before writes and retain business selection', async () => {
   let writes = 0;
   const { workspace } = setup({ createBusiness: async () => { writes++; } });
